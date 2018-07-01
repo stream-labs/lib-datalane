@@ -22,9 +22,45 @@
 #ifndef OS_WINDOWS_NAMED_PIPE_HPP
 #define OS_WINDOWS_NAMED_PIPE_HPP
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#include <inttypes.h>
+#include <string>
+#include <memory>
+#include "../error.hpp"
+#include "../tags.hpp"
+#include "async_request.hpp"
+
 namespace os {
 	namespace windows {
+		enum class pipe_type : int8_t {
+			Byte = 0x00,
+			//reserved = 0x01,
+			//reserved = 0x02,
+			//reserved = 0x03,
+			Message = 0x04,
+		};
+
+		enum class pipe_read_mode : int8_t {
+			Byte = 0x00,
+			//reserved = 0x01,
+			Message = 0x02,
+		};
+
 		class named_pipe {
+			HANDLE handle;
+			
+			public:
+			named_pipe(os::create_only_t, std::string name, size_t max_instances = PIPE_UNLIMITED_INSTANCES, pipe_type type = pipe_type::Message, pipe_read_mode mode = pipe_read_mode::Message, bool is_unique = false);
+			named_pipe(os::create_or_open_t, std::string name, size_t max_instances = PIPE_UNLIMITED_INSTANCES, pipe_type type = pipe_type::Message, pipe_read_mode mode = pipe_read_mode::Message, bool is_unique = false);
+			named_pipe(os::open_only_t, std::string name, pipe_read_mode mode = pipe_read_mode::Message);
+			~named_pipe();
+
+			os::error read(std::unique_ptr<os::windows::async_request>& request, char* buffer, size_t buffer_length);
+
+			os::error write(std::unique_ptr<os::windows::async_request>& request, const char* buffer, size_t buffer_length);
 
 		};
 	}
