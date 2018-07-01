@@ -37,9 +37,7 @@ namespace os {
 			overlapped();
 			~overlapped();
 
-			OVERLAPPED* get();
-
-
+			OVERLAPPED* get_overlapped_pointer();
 
 			// os::waitable
 			protected:

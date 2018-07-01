@@ -31,7 +31,7 @@ os::windows::overlapped::~overlapped() {
 	CloseHandle(data.hEvent);	
 }
 
-OVERLAPPED* os::windows::overlapped::get() {
+OVERLAPPED* os::windows::overlapped::get_overlapped_pointer() {
 	return &data;
 }
 
