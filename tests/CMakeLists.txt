@@ -1,0 +1,4 @@
+IF(WIN32)
+	# Windows
+	ADD_SUBDIRECTORY(windows)
+ENDIF()
