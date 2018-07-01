@@ -28,7 +28,7 @@
 
 namespace os {
 	namespace windows {
-		class semaphore : os::waitable {
+		class semaphore : public os::waitable {
 			HANDLE handle;
 
 			public:
