@@ -71,3 +71,7 @@ bool os::windows::async_request::cancel() {
 	CancelIoEx(handle, this->get_overlapped_pointer());
 }
 
+void os::windows::async_request::invalidate() {
+	valid = false;
+}
+

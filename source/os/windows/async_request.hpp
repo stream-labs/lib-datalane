@@ -49,6 +49,8 @@ namespace os {
 
 			bool cancel();
 
+			void invalidate();
+
 			public:
 			friend class named_pipe;
 		};
