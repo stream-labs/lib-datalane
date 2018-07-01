@@ -49,8 +49,6 @@ SET(PROJECT_SOURCE_PRIVATE
 	"${PROJECT_SOURCE_DIR}/source/datalane-socket-client.cpp"
 	"${PROJECT_SOURCE_DIR}/source/datalane-socket-server.hpp"
 	"${PROJECT_SOURCE_DIR}/source/datalane-socket-server.cpp"
-	"${PROJECT_SOURCE_DIR}/source/os-namedsocket.hpp"
-	"${PROJECT_SOURCE_DIR}/source/os-namedsocket.cpp"
 	"${PROJECT_SOURCE_DIR}/source/os/error.hpp"
 	"${PROJECT_SOURCE_DIR}/source/os/tags.hpp"
 	"${PROJECT_SOURCE_DIR}/source/os/waitable.hpp"
@@ -62,7 +60,6 @@ SET(PROJECT_DATA
 )
 
 SET(PROJECT_LIBRARIES
-	lib-universal-platform
 )
 
 IF(WIN32)
@@ -74,10 +71,6 @@ IF(WIN32)
 	)
 
 	LIST(APPEND PROJECT_SOURCE_PRIVATE
-		"${PROJECT_SOURCE_DIR}/source/os-namedsocket-win.hpp"
-		"${PROJECT_SOURCE_DIR}/source/os-namedsocket-win.cpp"
-		"${PROJECT_SOURCE_DIR}/source/os-windows-overlapped-manager.hpp"
-		"${PROJECT_SOURCE_DIR}/source/os-windows-overlapped-manager.cpp"
 		"${PROJECT_SOURCE_DIR}/source/os/windows/async_request.hpp"
 		"${PROJECT_SOURCE_DIR}/source/os/windows/async_request.cpp"
 		"${PROJECT_SOURCE_DIR}/source/os/windows/named-pipe.hpp"
@@ -133,35 +126,30 @@ ELSE()
 ENDIF()
 
 # Includes
-INCLUDE_DIRECTORIES(${PROJECT_NAME}
-	${PROJECT_SOURCE_DIR}/include
-	${PROJECT_SOURCE_DIR}/source
-	${Boost_INCLUDE_DIRS}
-)
 TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME}
-	PRIVATE ${PROJECT_BINARY_DIR}
-	PRIVATE ${PROJECT_SOURCE_DIR}/source
-	INTERFACE ${PROJECT_SOURCE_DIR}/include
+	PRIVATE source
+	PUBLIC include
 )
 
 # Directories
 LINK_DIRECTORIES(
-	${Boost_LIBRARY_DIRS}
 )
 
 # Linking
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}
-	${lib-datalane_LIBRARIES}
+	${PROJECT_LIBRARIES}
 )
 
 ################################################################################
 # Samples
 ################################################################################
 IF(${OPTIONPREFIX}BUILD_SAMPLES)
+	ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/samples)
 ENDIF(${OPTIONPREFIX}BUILD_SAMPLES)
 
 ################################################################################
 # Tests
 ################################################################################
 IF(${OPTIONPREFIX}BUILD_TESTS)
+	ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/tests)
 ENDIF(${OPTIONPREFIX}BUILD_TESTS)
