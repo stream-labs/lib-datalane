@@ -42,10 +42,6 @@ os::error os::waitable::wait(waitable* item, std::chrono::nanoseconds timeout) {
 	return os::error::Error;
 }
 
-os::error os::waitable::wait(waitable* item, std::chrono::nanoseconds timeout) {
-
-}
-
 os::error os::waitable::wait(waitable* item) {
 	return wait(item, std::chrono::milliseconds(INFINITE));
 }
@@ -66,7 +62,7 @@ os::error os::waitable::wait_any(waitable** items, size_t items_count, size_t& s
 
 	int64_t ms_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
 
-	DWORD result = WaitForMultipleObjects(handles.size(), handles.data(), false, DWORD(ms_timeout));
+	DWORD result = WaitForMultipleObjects(DWORD(handles.size()), handles.data(), false, DWORD(ms_timeout));
 	if ((result >= WAIT_OBJECT_0) && result < (WAIT_OBJECT_0 + MAXIMUM_WAIT_OBJECTS)) {
 		signalled_index = result - WAIT_OBJECT_0;
 		return os::error::Success;
@@ -108,7 +104,7 @@ os::error os::waitable::wait_all(waitable** items, size_t items_count, size_t& s
 
 	int64_t ms_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
 
-	DWORD result = WaitForMultipleObjects(handles.size(), handles.data(), true, DWORD(ms_timeout));
+	DWORD result = WaitForMultipleObjects(DWORD(handles.size()), handles.data(), true, DWORD(ms_timeout));
 	if ((result >= WAIT_OBJECT_0) && result < (WAIT_OBJECT_0 + MAXIMUM_WAIT_OBJECTS)) {
 		signalled_index = result - WAIT_OBJECT_0;
 		return os::error::Success;
