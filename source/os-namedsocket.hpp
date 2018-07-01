@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 #include <list>
-#include "os-error.hpp"
+#include "os/error.hpp"
 
 namespace os {
 	typedef int64_t ClientId_t;
