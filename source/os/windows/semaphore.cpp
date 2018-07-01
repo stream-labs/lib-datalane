@@ -112,6 +112,7 @@ os::error os::windows::semaphore::signal(uint32_t count /*= 1*/) {
 		sprintf_s(msg.data(), msg.size(), "Semaphore release failed with error code %lX.\0", GetLastError());
 		throw std::runtime_error(msg.data());
 	}
+	return os::error::Success;
 }
 
 void* os::windows::semaphore::get_waitable() {
