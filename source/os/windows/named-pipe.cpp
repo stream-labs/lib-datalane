@@ -140,6 +140,34 @@ os::windows::named_pipe::~named_pipe() {
 	}
 }
 
+os::error os::windows::named_pipe::available(size_t& avail) {
+	DWORD bytes = 0;
+	SetLastError(ERROR_SUCCESS);
+	if (!PeekNamedPipe(handle, NULL, NULL, NULL, NULL, &bytes) || (GetLastError() != ERROR_SUCCESS)) {
+		switch (GetLastError()) {
+			case ERROR_BROKEN_PIPE:
+				return os::error::Disconnected;
+			default:
+				return os::error::Error;
+		}
+	}
+	avail = bytes;
+}
+
+os::error os::windows::named_pipe::total_available(size_t& avail) {
+	DWORD bytes = 0;
+	SetLastError(ERROR_SUCCESS);
+	if (!PeekNamedPipe(handle, NULL, NULL, NULL, &bytes, NULL) || (GetLastError() != ERROR_SUCCESS)) {
+		switch (GetLastError()) {
+			case ERROR_BROKEN_PIPE:
+				return os::error::Disconnected;
+			default:
+				return os::error::Error;
+		}
+	}
+	avail = bytes;
+}
+
 os::error os::windows::named_pipe::read(std::unique_ptr<os::windows::async_request>& request, char* buffer, size_t buffer_length) {
 	if (!request) {
 		request = std::make_unique<os::windows::async_request>(handle);

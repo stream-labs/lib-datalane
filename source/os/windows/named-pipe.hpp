@@ -54,6 +54,10 @@ namespace os {
 			named_pipe(os::open_only_t, std::string name, pipe_read_mode mode = pipe_read_mode::Message);
 			~named_pipe();
 
+			os::error available(size_t& avail);
+
+			os::error total_available(size_t& avail);
+
 			os::error read(std::unique_ptr<os::windows::async_request>& request, char* buffer, size_t buffer_length);
 
 			os::error write(std::unique_ptr<os::windows::async_request>& request, const char* buffer, size_t buffer_length);
