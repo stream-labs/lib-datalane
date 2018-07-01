@@ -24,22 +24,6 @@
 #include <codecvt>
 #include <string>
 
-os::windows::semaphore::semaphore(uint32_t initial_count /*= 0*/, uint32_t maximum_count /*= UINT32_MAX*/) {
-	if (initial_count > maximum_count) {
-		throw std::invalid_argument("initial_count can't be larger than maximum_count");
-	} else if (maximum_count == 0) {
-		throw std::invalid_argument("maximum_count can't be 0");
-	}
-
-	SetLastError(ERROR_SUCCESS);
-	handle = CreateSemaphoreW(NULL, initial_count, maximum_count, NULL);
-	if (!handle || (GetLastError() != ERROR_SUCCESS)) {
-		std::vector<char> msg(2048);
-		sprintf_s(msg.data(), msg.size(), "Semaphore creation failed with error code %lX.\0", GetLastError());
-		throw std::runtime_error(msg.data());
-	}
-}
-
 inline std::wstring make_wide_string(std::string name) {
 	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 	return converter.from_bytes(name);
@@ -55,7 +39,7 @@ inline void validate_params(std::wstring name, DWORD initial_count, DWORD maximu
 			std::vector<char> msg(2048);
 			sprintf_s(msg.data(), msg.size(), "'name' can't be longer than %lld characters.\0", uint64_t(MAX_PATH));
 			throw std::invalid_argument(msg.data());
-		}		
+		}
 	}
 }
 
@@ -75,6 +59,22 @@ inline void open_semaphore_impl(HANDLE& handle, std::wstring name) {
 	if (!handle || (GetLastError() != ERROR_SUCCESS)) {
 		std::vector<char> msg(2048);
 		sprintf_s(msg.data(), msg.size(), "Opening Semaphore failed with error code %lX.\0", GetLastError());
+		throw std::runtime_error(msg.data());
+	}
+}
+
+os::windows::semaphore::semaphore(uint32_t initial_count /*= 0*/, uint32_t maximum_count /*= UINT32_MAX*/) {
+	if (initial_count > maximum_count) {
+		throw std::invalid_argument("initial_count can't be larger than maximum_count");
+	} else if (maximum_count == 0) {
+		throw std::invalid_argument("maximum_count can't be 0");
+	}
+
+	SetLastError(ERROR_SUCCESS);
+	handle = CreateSemaphoreW(NULL, initial_count, maximum_count, NULL);
+	if (!handle || (GetLastError() != ERROR_SUCCESS)) {
+		std::vector<char> msg(2048);
+		sprintf_s(msg.data(), msg.size(), "Semaphore creation failed with error code %lX.\0", GetLastError());
 		throw std::runtime_error(msg.data());
 	}
 }
