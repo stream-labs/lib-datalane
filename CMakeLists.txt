@@ -78,6 +78,8 @@ IF(WIN32)
 		"${PROJECT_SOURCE_DIR}/source/os-namedsocket-win.cpp"
 		"${PROJECT_SOURCE_DIR}/source/os-windows-overlapped-manager.hpp"
 		"${PROJECT_SOURCE_DIR}/source/os-windows-overlapped-manager.cpp"
+		"${PROJECT_SOURCE_DIR}/source/os/windows/async_request.hpp"
+		"${PROJECT_SOURCE_DIR}/source/os/windows/async_request.cpp"
 		"${PROJECT_SOURCE_DIR}/source/os/windows/named-pipe.hpp"
 		"${PROJECT_SOURCE_DIR}/source/os/windows/named-pipe.cpp"
 		"${PROJECT_SOURCE_DIR}/source/os/windows/semaphore.hpp"
