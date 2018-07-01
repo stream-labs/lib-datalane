@@ -26,7 +26,7 @@
 
 namespace os {
 	namespace windows {
-		class overlapped : os::waitable {
+		class overlapped : public os::waitable {
 			OVERLAPPED data;
 
 			public:
