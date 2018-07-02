@@ -25,8 +25,3 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
 	lib-datalane
 	${PROJECT_LIBRARIES}
 )
-
-file(GENERATE 
-    OUTPUT "${PROJECT_SOURCE_DIR}/includes.txt" 
-    CONTENT "$<TARGET_PROPERTY:test_windows_named_pipe,INCLUDE_DIRECTORIES>\n"
-)
