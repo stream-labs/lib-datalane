@@ -27,13 +27,23 @@ os::error os::waitable::wait(waitable* item, std::chrono::nanoseconds timeout) {
 	HANDLE handle = (HANDLE)item->get_waitable();
 
 	SetLastError(ERROR_SUCCESS);
-	DWORD result = WaitForSingleObject(handle, DWORD(ms_timeout));
+	DWORD result = WaitForSingleObjectEx(handle, DWORD(ms_timeout), TRUE);
 	if (result == WAIT_OBJECT_0) {
 		return os::error::Success;
 	} else if (result = WAIT_TIMEOUT) {
 		return os::error::TimedOut;
 	} else if (result = WAIT_ABANDONED) {
 		return os::error::Disconnected; // Disconnected Semaphore from original Owner
+	} else if (result = WAIT_IO_COMPLETION) {
+		SetLastError(ERROR_SUCCESS);
+		result = WaitForSingleObjectEx(handle, DWORD(ms_timeout), TRUE);
+		if (result == WAIT_OBJECT_0) {
+			return os::error::Success;
+		} else if (result = WAIT_TIMEOUT) {
+			return os::error::TimedOut;
+		} else if (result = WAIT_ABANDONED) {
+			return os::error::Disconnected; // Disconnected Semaphore from original Owner
+		}
 	}
 	return os::error::Error;
 }
