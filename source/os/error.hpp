@@ -52,6 +52,9 @@ namespace os {
 		// Too Much Data
 		TooMuchData,
 
+		// Connected (opposite of Disconnected, if you didn't know)
+		Connected,
+
 	};
 }
 

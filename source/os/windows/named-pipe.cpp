@@ -132,6 +132,7 @@ os::windows::named_pipe::named_pipe(os::create_only_t, std::string name, size_t 
 
 	std::wstring wide_name = make_wide_string(make_windows_compatible(name + '\0'));
 	create_logic(handle, wide_name, max_instances, type, mode, is_unique);
+	created = true;
 }
 
 os::windows::named_pipe::named_pipe(os::create_or_open_t, std::string name, size_t max_instances /*= PIPE_UNLIMITED_INSTANCES*/, pipe_type type /*= pipe_type::Message*/, pipe_read_mode mode /*= pipe_read_mode::Message*/, bool is_unique /*= false*/) {
@@ -140,6 +141,7 @@ os::windows::named_pipe::named_pipe(os::create_or_open_t, std::string name, size
 	std::wstring wide_name = make_wide_string(make_windows_compatible(name + '\0'));
 	try {
 		create_logic(handle, wide_name, max_instances, type, mode, is_unique);
+		created = true;
 	} catch (...) {
 		open_logic(handle, wide_name, mode);
 	}
@@ -226,7 +228,43 @@ os::error os::windows::named_pipe::write(std::unique_ptr<os::windows::async_requ
 		} else if (error == ERROR_BROKEN_PIPE) {
 			return os::error::Disconnected;
 		} else if (error != ERROR_IO_PENDING) {
-			request->cancel();
+			return os::error::Error;
+		}
+	}
+
+	request->set_valid(true);
+	return os::error::Success;
+}
+
+bool os::windows::named_pipe::is_created() {
+	return created;
+}
+
+bool os::windows::named_pipe::is_connected() {
+	size_t avail;
+	return available(avail) == os::error::Success;
+}
+
+os::error os::windows::named_pipe::accept(std::unique_ptr<os::windows::async_request>& request) {
+	if (!is_created()) {
+		return os::error::Error;
+	}
+
+	if (!request) {
+		request = std::make_unique<os::windows::async_request>(handle);
+	}
+	request->set_handle(handle);
+
+	SetLastError(ERROR_SUCCESS);
+	if (!ConnectNamedPipe(handle, request->get_overlapped_pointer()) || (GetLastError() != ERROR_SUCCESS)) {
+		DWORD error = GetLastError();
+		if (error == ERROR_MORE_DATA) {
+			return os::error::MoreData;
+		} else if (error == ERROR_BROKEN_PIPE) {
+			return os::error::Disconnected;
+		} else if (error == ERROR_PIPE_CONNECTED) {
+			return os::error::Connected;
+		} else if (error != ERROR_IO_PENDING) {
 			return os::error::Error;
 		}
 	}
