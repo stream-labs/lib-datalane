@@ -9,6 +9,9 @@
 #include <stdarg.h>
 #include <ctime>
 #include <iomanip>
+#include <locale>
+#include <codecvt>
+#include <string>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -86,6 +89,7 @@ bool shared::logger::to_file(bool v, std::string path) {
 			log_file_stream.close();
 		}
 	}
+	return true;
 }
 
 void shared::logger::log(std::string format, ...) {
@@ -108,10 +112,10 @@ void shared::logger::log(std::string format, ...) {
 		auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(timeSinceStart);
 
 		const char* timestamp_format = "%.2d:%.2d:%.2d.%.3d.%.3d.%.3d";
-	#define timestamp_args hours.count(), minutes.count(), seconds.count(),	milliseconds.count(), microseconds.count(), nanoseconds.count()
+#define timestamp_args hours.count(), minutes.count(), seconds.count(),	milliseconds.count(), microseconds.count(), nanoseconds.count()
 		timestamp_buffer.resize(_scprintf(timestamp_format, timestamp_args) + 1);
 		sprintf_s(timestamp_buffer.data(), timestamp_buffer.size(), timestamp_format, timestamp_args);
-	#undef timestamp_args
+#undef timestamp_args
 	} else {
 		std::time_t t = std::time(0);
 		timestamp_buffer.resize(sizeof("0000-00-00T00:00:00+0000"));
@@ -162,7 +166,7 @@ void shared::logger::log(std::string format, ...) {
 				fwrite(final_buffer.data(), sizeof(char), final_buffer.size(), stderr);
 			}
 			if (log_debug_enabled) {
-			#ifdef _WIN32
+#ifdef _WIN32
 				if (IsDebuggerPresent()) {
 					int wNum = MultiByteToWideChar(CP_UTF8, 0, final_buffer.data(), -1, NULL, 0);
 					if (wNum > 1) {
@@ -175,7 +179,7 @@ void shared::logger::log(std::string format, ...) {
 						OutputDebugStringW(wide_buf.c_str());
 					}
 				}
-			#endif
+#endif
 			}
 			if (log_file_enabled) {
 				if (log_file_stream.is_open()) {
@@ -216,6 +220,97 @@ std::string shared::os::get_working_directory() {
 	return bufUTF8.data();
 #endif
 }
+
+#ifdef _WIN32
+shared::os::process::process(std::string program, std::string command_line, std::string working_directory) {
+	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+	std::wstring wide_program, wide_command_line, wide_working_directory;
+
+	wide_program = converter.from_bytes(program);
+	wide_command_line = converter.from_bytes(command_line);
+	wide_working_directory = converter.from_bytes(working_directory);
+
+	std::vector<wchar_t> wide_command_line_buf(wide_command_line.size() * sizeof(wchar_t));
+	memcpy(wide_command_line_buf.data(), wide_command_line.data(), wide_command_line.size() * sizeof(wchar_t));
+
+	// Process Info
+	PROCESS_INFORMATION m_win32_processInformation;
+	STARTUPINFOW m_win32_startupInfo;
+	memset(&m_win32_startupInfo, 0, sizeof(m_win32_startupInfo));
+	memset(&m_win32_processInformation, 0, sizeof(m_win32_processInformation));
+
+	// Launch process
+	size_t attempts = 0;
+	if (!CreateProcessW(wide_program.c_str(), wide_command_line_buf.data(),
+		nullptr, nullptr, false, CREATE_NEW_CONSOLE, nullptr,
+		wide_working_directory.length() > 0 ? wide_working_directory.c_str() : nullptr,
+		&m_win32_startupInfo, &m_win32_processInformation)) {
+		throw std::runtime_error("Failed to create process");
+	}
+
+	id = uint64_t(m_win32_processInformation.dwProcessId);
+	handle = reinterpret_cast<uint64_t>(m_win32_processInformation.hProcess);
+}
+
+shared::os::process::~process() {
+	kill(INT32_MIN);
+}
+
+bool shared::os::process::is_alive(process proc) {
+	if (is_detached()) {
+		return false;
+	}
+
+	SetLastError(ERROR_SUCCESS);
+	DWORD id = GetProcessId(reinterpret_cast<HANDLE>(handle));
+	if (id != static_cast<DWORD>(id)) {
+		return false;
+	}
+	DWORD errorCode = GetLastError();
+	if (errorCode != ERROR_SUCCESS) {
+		return false;
+	}
+	return true;
+}
+
+bool shared::os::process::kill(int32_t exit_code) {
+	if (is_detached()) {
+		return false;
+	}
+
+	SetLastError(ERROR_SUCCESS);
+	TerminateProcess(reinterpret_cast<HANDLE>(handle), exit_code);
+	DWORD errorCode = GetLastError();
+	return (errorCode == ERROR_SUCCESS);
+}
+
+int32_t shared::os::process::get_exit_code() {
+	if (is_detached()) {
+		return -1;
+	}
+
+	DWORD exitcode = 0;
+	SetLastError(ERROR_SUCCESS);
+	GetExitCodeProcess(reinterpret_cast<HANDLE>(handle), &exitcode);
+	if (GetLastError() == ERROR_SUCCESS) {
+		return exitcode;
+	}
+	return -1;
+}
+
+void shared::os::process::detach() {
+	id = 0;
+	if (handle) {
+		CloseHandle(reinterpret_cast<HANDLE>(handle));
+		handle = 0;
+	}
+}
+
+bool shared::os::process::is_detached() {
+	return (handle == 0);
+}
+#endif
+
 #pragma endregion shared::os
 
 #pragma region shared::time
@@ -335,3 +430,4 @@ void shared::time::measure_timer::instance::reparent(measure_timer* new_parent) 
 }
 
 #pragma endregion shared::time
+
