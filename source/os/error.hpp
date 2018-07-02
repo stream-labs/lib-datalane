@@ -49,6 +49,9 @@ namespace os {
 		// Disconnected
 		Disconnected,
 
+		// Too Much Data
+		TooMuchData,
+
 	};
 }
 

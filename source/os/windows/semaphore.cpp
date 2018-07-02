@@ -107,10 +107,12 @@ os::windows::semaphore::~semaphore() {
 os::error os::windows::semaphore::signal(uint32_t count /*= 1*/) {
 	SetLastError(ERROR_SUCCESS);
 	DWORD result = ReleaseSemaphore(handle, count, NULL);
-	if (result) {
-		std::vector<char> msg(2048);
-		sprintf_s(msg.data(), msg.size(), "Semaphore release failed with error code %lX.\0", GetLastError());
-		throw std::runtime_error(msg.data());
+	if (!result) {
+		DWORD err = GetLastError();
+		if (err == ERROR_TOO_MANY_POSTS) {
+			return os::error::TooMuchData;
+		}
+		return os::error::Error;
 	}
 	return os::error::Success;
 }
