@@ -24,11 +24,17 @@ os::windows::overlapped::overlapped() {
 }
 
 os::windows::overlapped::~overlapped() {
-	CloseHandle(data.hEvent);	
+	CloseHandle(data.hEvent);
 }
 
 OVERLAPPED* os::windows::overlapped::get_overlapped_pointer() {
 	return &data;
+}
+
+void os::windows::overlapped::completion_routine(DWORD dwErrorCode, DWORD dwBytesTransmitted, OVERLAPPED* ov) {
+	if (dwErrorCode == ERROR_SUCCESS) {
+		SetEvent(ov->hEvent);
+	}
 }
 
 void* os::windows::overlapped::get_waitable() {

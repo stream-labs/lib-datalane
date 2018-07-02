@@ -35,6 +35,8 @@ namespace os {
 
 			OVERLAPPED* get_overlapped_pointer();
 
+			static void completion_routine(DWORD dwErrorCode, DWORD dwBytesTransmitted, OVERLAPPED* ov);
+
 			// os::waitable
 			protected:
 			virtual void* get_waitable() override;
