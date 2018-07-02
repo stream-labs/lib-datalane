@@ -23,7 +23,7 @@
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 
-#define DEFAULT_BUFFER_SIZE 65535
+#define DEFAULT_BUFFER_SIZE 16 * 1024 * 1024
 #define DEFAULT_WAIT_TIME 100
 
 #define MAX_PATH_MINUS_PREFIX (MAX_PATH - 9)
@@ -102,10 +102,27 @@ inline void create_logic(HANDLE& handle, std::wstring name, size_t max_instances
 
 inline void open_logic(HANDLE& handle, std::wstring name, os::windows::pipe_read_mode mode) {
 	SetLastError(ERROR_SUCCESS);
-	handle = CreateFileW(name.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+	handle = CreateFileW(name.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH, NULL);
 	if (!handle || (GetLastError() != ERROR_SUCCESS)) {
 		std::vector<char> msg(2048);
 		sprintf_s(msg.data(), msg.size(), "Opening Named Pipe failed with error code %lX.\0", GetLastError());
+		throw std::runtime_error(msg.data());
+	}
+
+	DWORD pipe_read_mode = 0;
+	switch (mode) {
+		case os::windows::pipe_read_mode::Message:
+			pipe_read_mode = PIPE_READMODE_MESSAGE;
+			break;
+		default:
+			pipe_read_mode = PIPE_READMODE_BYTE;
+			break;
+	}
+
+	SetLastError(ERROR_SUCCESS);
+	if (!SetNamedPipeHandleState(handle, &pipe_read_mode, NULL, NULL)) {
+		std::vector<char> msg(2048);
+		sprintf_s(msg.data(), msg.size(), "Changing Named Pipe read mode failed with error code %lX.\0", GetLastError());
 		throw std::runtime_error(msg.data());
 	}
 }
