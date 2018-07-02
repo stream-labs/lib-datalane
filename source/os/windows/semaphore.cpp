@@ -25,11 +25,15 @@ inline std::wstring make_wide_string(std::string name) {
 	return converter.from_bytes(name);
 }
 
-inline void validate_params(std::wstring name, DWORD initial_count, DWORD maximum_count) {
+inline void validate_params(std::wstring name, int32_t initial_count, int32_t maximum_count) {
 	if (initial_count > maximum_count) {
 		throw std::invalid_argument("'initial_count' can't be larger than 'maximum_count'.");
+	} else if (initial_count < 0) {
+		throw std::invalid_argument("'initial_count' can't be negative.");
 	} else if (maximum_count == 0) {
 		throw std::invalid_argument("'maximum_count' can't be 0.");
+	} else if (maximum_count < 0) {
+		throw std::invalid_argument("'maximum_count' can't be negative.");
 	} else if (name.length() > 0) {
 		if (name.length() >= MAX_PATH) {
 			std::vector<char> msg(2048);
@@ -59,7 +63,7 @@ inline void open_semaphore_impl(HANDLE& handle, std::wstring name) {
 	}
 }
 
-os::windows::semaphore::semaphore(uint32_t initial_count /*= 0*/, uint32_t maximum_count /*= UINT32_MAX*/) {
+os::windows::semaphore::semaphore(int32_t initial_count /*= 0*/, int32_t maximum_count /*= UINT32_MAX*/) {
 	if (initial_count > maximum_count) {
 		throw std::invalid_argument("initial_count can't be larger than maximum_count");
 	} else if (maximum_count == 0) {
@@ -75,13 +79,13 @@ os::windows::semaphore::semaphore(uint32_t initial_count /*= 0*/, uint32_t maxim
 	}
 }
 
-os::windows::semaphore::semaphore(os::create_only_t, std::string name, uint32_t initial_count /*= 0*/, uint32_t maximum_count /*= UINT32_MAX*/) {
+os::windows::semaphore::semaphore(os::create_only_t, std::string name, int32_t initial_count /*= 0*/, int32_t maximum_count /*= UINT32_MAX*/) {
 	std::wstring wide_name = make_wide_string(name + '\0');
 	validate_params(wide_name, initial_count, maximum_count);
 	create_semaphore_impl(handle, wide_name, initial_count, maximum_count);
 }
 
-os::windows::semaphore::semaphore(os::create_or_open_t, std::string name, uint32_t initial_count /*= 0*/, uint32_t maximum_count /*= UINT32_MAX*/) {
+os::windows::semaphore::semaphore(os::create_or_open_t, std::string name, int32_t initial_count /*= 0*/, int32_t maximum_count /*= UINT32_MAX*/) {
 	std::wstring wide_name = make_wide_string(name + '\0');
 	validate_params(wide_name, initial_count, maximum_count);
 	try {
