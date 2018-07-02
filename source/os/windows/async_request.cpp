@@ -68,7 +68,10 @@ bool os::windows::async_request::cancel() {
 		throw std::runtime_error("Asynchronous request is invalid.");
 	}
 
-	return CancelIoEx(handle, this->get_overlapped_pointer());
+	if (!is_complete()) {
+		return CancelIoEx(handle, this->get_overlapped_pointer());
+	}
+	return true;
 }
 
 void os::windows::async_request::invalidate() {
