@@ -20,7 +20,7 @@
 os::windows::overlapped::overlapped() {
 	data.Internal = data.InternalHigh = data.Offset = data.OffsetHigh = 0;
 	data.Pointer = nullptr;
-	data.hEvent = CreateEventW(NULL, false, false, NULL);
+	data.hEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
 }
 
 os::windows::overlapped::~overlapped() {
