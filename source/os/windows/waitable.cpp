@@ -51,7 +51,7 @@ os::error os::waitable::wait_any(waitable** items, size_t items_count, size_t& s
 
 	// Need to create a sequential array of HANDLEs here.
 	std::vector<HANDLE> handles(items_count);
-	for (size_t idx = 0, eidx = items_count; idx <= eidx; idx++) {
+	for (size_t idx = 0, eidx = items_count; idx < eidx; idx++) {
 		waitable* obj = items[idx];
 		handles[idx] = (HANDLE)obj->get_waitable();
 	}
@@ -93,7 +93,7 @@ os::error os::waitable::wait_all(waitable** items, size_t items_count, size_t& s
 
 	// Need to create a sequential array of HANDLEs here.
 	std::vector<HANDLE> handles(items_count);
-	for (size_t idx = 0, eidx = items_count; idx <= eidx; idx++) {
+	for (size_t idx = 0, eidx = items_count; idx < eidx; idx++) {
 		waitable* obj = items[idx];
 		handles[idx] = (HANDLE)obj->get_waitable();
 	}
