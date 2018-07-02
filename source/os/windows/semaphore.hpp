@@ -32,9 +32,9 @@ namespace os {
 			HANDLE handle;
 
 			public:
-			semaphore(uint32_t initial_count = 0, int32_t maximum_count = INT32_MAX);
-			semaphore(os::create_only_t, std::string name, uint32_t initial_count = 0, int32_t maximum_count = INT32_MAX);
-			semaphore(os::create_or_open_t, std::string name, uint32_t initial_count = 0, int32_t maximum_count = INT32_MAX);
+			semaphore(int32_t initial_count = 0, int32_t maximum_count = INT32_MAX);
+			semaphore(os::create_only_t, std::string name, int32_t initial_count = 0, int32_t maximum_count = INT32_MAX);
+			semaphore(os::create_or_open_t, std::string name, int32_t initial_count = 0, int32_t maximum_count = INT32_MAX);
 			semaphore(os::open_only_t, std::string name);
 			~semaphore();
 			
