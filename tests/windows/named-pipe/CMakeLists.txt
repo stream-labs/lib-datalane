@@ -3,6 +3,8 @@ project(test_windows_named_pipe)
 
 SET(PROJECT_SOURCES
 	"${PROJECT_SOURCE_DIR}/main.cpp"
+	"${PROJECT_SOURCE_DIR}/../../common.cpp"
+	"${PROJECT_SOURCE_DIR}/../../common.hpp"
 )
 
 SET(PROJECT_LIBRARIES
