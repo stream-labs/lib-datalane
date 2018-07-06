@@ -1,7 +1,7 @@
 # Basic Formatting
-TabWidth: 8
-UseTab: ForIndentation
-ColumnLimit: 80
+TabWidth: 4
+UseTab: ForContinuationAndIndentation
+ColumnLimit: 120
  
 # Language
 Language: Cpp
@@ -9,11 +9,11 @@ Standard: Cpp11
  
 # Indentation
 AccessModifierOffset: 0
-ConstructorInitializerIndentWidth: 1
-ContinuationIndentWidth: 1
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 4
 IndentCaseLabels: false
 #IndentPPDirectives:	true
-IndentWidth: 8
+IndentWidth: 4
 IndentWrappedFunctionNames: true
 NamespaceIndentation: All
  
@@ -60,8 +60,8 @@ BraceWrapping:
   SplitEmptyFunction: false
   SplitEmptyRecord: false
   SplitEmptyNamespace: false
-BinPackArguments: false
-BinPackParameters: false
+BinPackArguments: true
+BinPackParameters: true
 BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeBraces: Custom
 BreakBeforeTernaryOperators: true
