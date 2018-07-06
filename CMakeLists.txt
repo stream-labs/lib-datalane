@@ -49,10 +49,11 @@ SET(PROJECT_SOURCE_PRIVATE
 	"${PROJECT_SOURCE_DIR}/source/datalane-socket-client.cpp"
 	"${PROJECT_SOURCE_DIR}/source/datalane-socket-server.hpp"
 	"${PROJECT_SOURCE_DIR}/source/datalane-socket-server.cpp"
+	"${PROJECT_SOURCE_DIR}/source/os/async_op.hpp"
+	"${PROJECT_SOURCE_DIR}/source/os/async_op.cpp"
 	"${PROJECT_SOURCE_DIR}/source/os/error.hpp"
 	"${PROJECT_SOURCE_DIR}/source/os/tags.hpp"
 	"${PROJECT_SOURCE_DIR}/source/os/waitable.hpp"
-	"${PROJECT_SOURCE_DIR}/source/os/async_op.hpp"
 )
 
 SET(PROJECT_DATA

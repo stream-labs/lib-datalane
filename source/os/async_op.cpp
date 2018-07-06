@@ -15,39 +15,14 @@
 ** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#ifndef OS_ASYNC_OP_HPP
-#define OS_ASYNC_OP_HPP
+#include "async_op.hpp"
 
-#include <functional>
-#include <inttypes.h>
-#include "error.hpp"
-#include "waitable.hpp"
+void os::async_op::set_callback(async_op_cb_t u_callback) {
+	if (is_valid()) {
+		if (!is_complete()) {
+			throw std::runtime_error("Can't change callback for a valid but incomplete operation.");
+		}
+	}
 
-namespace os {
-	typedef std::function<void(os::error success, size_t length)> async_op_cb_t;
-
-	class async_op : public os::waitable {
-		protected:
-		bool          valid = false;
-		async_op_cb_t callback;
-
-		public:
-		async_op(){};
-		async_op(async_op_cb_t u_callback) : callback(u_callback){};
-		virtual ~async_op(){};
-
-		virtual bool is_valid() = 0;
-
-		virtual void invalidate() = 0;
-
-		virtual bool is_complete() = 0;
-
-		virtual size_t get_bytes_transferred() = 0;
-
-		virtual bool cancel() = 0;
-
-		virtual void set_callback(async_op_cb_t u_callback);
-	};
-} // namespace os
-
-#endif // OS_ASYNC_OP_HPP
+	callback = u_callback;
+}
