@@ -76,10 +76,12 @@ IF(WIN32)
 		"${PROJECT_SOURCE_DIR}/source/os/windows/async_request.cpp"
 		"${PROJECT_SOURCE_DIR}/source/os/windows/named-pipe.hpp"
 		"${PROJECT_SOURCE_DIR}/source/os/windows/named-pipe.cpp"
-		"${PROJECT_SOURCE_DIR}/source/os/windows/semaphore.hpp"
-		"${PROJECT_SOURCE_DIR}/source/os/windows/semaphore.cpp"
 		"${PROJECT_SOURCE_DIR}/source/os/windows/overlapped.hpp"
 		"${PROJECT_SOURCE_DIR}/source/os/windows/overlapped.cpp"
+		"${PROJECT_SOURCE_DIR}/source/os/windows/semaphore.hpp"
+		"${PROJECT_SOURCE_DIR}/source/os/windows/semaphore.cpp"
+		"${PROJECT_SOURCE_DIR}/source/os/windows/utility.hpp"
+		"${PROJECT_SOURCE_DIR}/source/os/windows/utility.cpp"
 		"${PROJECT_SOURCE_DIR}/source/os/windows/waitable.cpp"
 	)
 ELSEIF(APPLE)
