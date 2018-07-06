@@ -64,10 +64,17 @@ namespace os {
 
 			os::error total_available(size_t &avail);
 
+			[[deprecated("Use read(char*, size_t, std::shared_ptr<os::async_op>&, os::async_op_cb_t).")]]
 			os::error read(std::unique_ptr<os::windows::async_request> &request, char *buffer, size_t buffer_length);
-
+			
+			[[deprecated("Use write(const char*, size_t, std::shared_ptr<os::async_op>&, os::async_op_cb_t).")]]
 			os::error write(std::unique_ptr<os::windows::async_request> &request, const char *buffer,
 							size_t buffer_length);
+
+			os::error read(char *buffer, size_t buffer_length, std::shared_ptr<os::async_op> &op, os::async_op_cb_t cb);
+
+			os::error write(const char *buffer, size_t buffer_length, std::shared_ptr<os::async_op> &op,
+							os::async_op_cb_t cb);
 
 			bool is_created();
 

@@ -19,6 +19,7 @@
 #include <locale>
 #include <string>
 #include "named-pipe.hpp"
+#include "utility.hpp"
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -249,6 +250,56 @@ os::error os::windows::named_pipe::write(std::unique_ptr<os::windows::async_requ
 	}
 
 	request->set_valid(true);
+	return os::error::Success;
+}
+
+os::error os::windows::named_pipe::read(char *buffer, size_t buffer_length, std::shared_ptr<os::async_op> &op,
+										os::async_op_cb_t cb) {
+	std::shared_ptr<os::windows::async_request> ar = std::static_pointer_cast<os::windows::async_request>(op);
+	if (!ar) {
+		ar = std::make_shared<os::windows::async_request>();
+	}
+	ar->set_callback(cb);
+	ar->set_handle(handle);
+
+	SetLastError(ERROR_SUCCESS);
+	if (!ReadFileEx(handle, buffer, DWORD(buffer_length), ar->get_overlapped_pointer(),
+					os::windows::async_request::completion_routine)
+		|| (GetLastError() != ERROR_SUCCESS)) {
+		os::error error = utility::translate_error(GetLastError());
+		if (error != os::error::Success) {
+			ar->cancel();
+		}
+		return error;
+	}
+
+	ar->set_valid(true);
+	op = std::static_pointer_cast<os::async_op>(ar);
+	return os::error::Success;
+}
+
+os::error os::windows::named_pipe::write(const char *buffer, size_t buffer_length, std::shared_ptr<os::async_op> &op,
+										 os::async_op_cb_t cb) {
+	std::shared_ptr<os::windows::async_request> ar = std::static_pointer_cast<os::windows::async_request>(op);
+	if (!ar) {
+		ar = std::make_shared<os::windows::async_request>();
+	}
+	ar->set_callback(cb);
+	ar->set_handle(handle);
+
+	SetLastError(ERROR_SUCCESS);
+	if (!WriteFileEx(handle, buffer, DWORD(buffer_length), ar->get_overlapped_pointer(),
+					 os::windows::async_request::completion_routine)
+		|| (GetLastError() != ERROR_SUCCESS)) {
+		os::error error = utility::translate_error(GetLastError());
+		if (error != os::error::Success) {
+			ar->cancel();
+		}
+		return error;
+	}
+
+	ar->set_valid(true);
+	op = std::static_pointer_cast<os::async_op>(ar);
 	return os::error::Success;
 }
 
