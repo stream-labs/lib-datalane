@@ -16,19 +16,41 @@
 */
 
 #include "async_request.hpp"
+#include "utility.hpp"
 
 void os::windows::async_request::set_handle(HANDLE handle) {
 	this->handle = handle;
-	this->valid = false;
+	this->valid  = false;
 }
 
 void os::windows::async_request::set_valid(bool valid) {
 	this->valid = valid;
 }
 
-os::windows::async_request::async_request(HANDLE handle) {
-	this->handle = handle;
-	this->valid = false;
+void os::windows::async_request::completion_routine(DWORD dwErrorCode,
+                                                    DWORD dwBytesTransmitted,
+                                                    OVERLAPPED *ov) {
+	os::windows::overlapped *ovp =
+	 reinterpret_cast<os::windows::overlapped *>(
+	  reinterpret_cast<char *>(ov) + sizeof(OVERLAPPED));
+
+	os::windows::async_request *ar =
+	 static_cast<os::windows::async_request *>(ovp);
+
+	if (ar) {
+		if (ar->callback) {
+			ar->callback(
+			 os::windows::utility::translate_error(dwErrorCode),
+			 dwBytesTransmitted);
+		}
+	}
+
+	os::windows::overlapped::completion_routine(
+	 dwErrorCode, dwBytesTransmitted, ov);
+}
+
+void *os::windows::async_request::get_waitable() {
+	return os::windows::overlapped::get_waitable();
 }
 
 os::windows::async_request::~async_request() {
@@ -41,9 +63,13 @@ bool os::windows::async_request::is_valid() {
 	return this->valid;
 }
 
+void os::windows::async_request::invalidate() {
+	valid = false;
+}
+
 bool os::windows::async_request::is_complete() {
 	if (!is_valid()) {
-		throw std::runtime_error("Asynchronous request is invalid.");
+		return false;
 	}
 
 	return HasOverlappedIoCompleted(this->get_overlapped_pointer());
@@ -51,21 +77,22 @@ bool os::windows::async_request::is_complete() {
 
 size_t os::windows::async_request::get_bytes_transferred() {
 	if (!is_valid()) {
-		throw std::runtime_error("Asynchronous request is invalid.");
+		return 0;
 	}
 
 	DWORD bytes = 0;
 	SetLastError(ERROR_SUCCESS);
-	GetOverlappedResult(handle, this->get_overlapped_pointer(), &bytes, false);
+	GetOverlappedResult(
+	 handle, this->get_overlapped_pointer(), &bytes, false);
 	if (GetLastError() == ERROR_IO_INCOMPLETE) {
-		throw std::runtime_error("Asynchronous request is not yet complete.");
+		return 0;
 	}
 	return bytes;
 }
 
 bool os::windows::async_request::cancel() {
 	if (!is_valid()) {
-		throw std::runtime_error("Asynchronous request is invalid.");
+		return false;
 	}
 
 	if (!is_complete()) {
@@ -73,8 +100,3 @@ bool os::windows::async_request::cancel() {
 	}
 	return true;
 }
-
-void os::windows::async_request::invalidate() {
-	valid = false;
-}
-

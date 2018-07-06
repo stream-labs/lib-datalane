@@ -22,39 +22,47 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#include "../async_op.hpp"
 #include "overlapped.hpp"
 
 namespace os {
 	namespace windows {
 		class named_pipe;
 
-		class async_request : public overlapped {
-			HANDLE handle;
-			bool valid;
+		class async_request : public os::windows::overlapped,
+		                      public os::async_op {
+			HANDLE handle = {0};
 
 			protected:
+			// os::windows::overlapped
 			void set_handle(HANDLE handle);
 
 			void set_valid(bool valid);
 
+			static void completion_routine(DWORD dwErrorCode,
+			                               DWORD dwBytesTransmitted,
+			                               OVERLAPPED *ov);
+
+			// os::waitable
+			virtual void *get_waitable() override;
+
 			public:
-			async_request(HANDLE handle);
 			~async_request();
 
-			bool is_valid();
+			virtual bool is_valid() override;
 
-			bool is_complete();
+			virtual void invalidate() override;
 
-			size_t get_bytes_transferred();
+			virtual bool is_complete() override;
 
-			bool cancel();
+			virtual size_t get_bytes_transferred() override;
 
-			void invalidate();
+			virtual bool cancel() override;
 
 			public:
 			friend class named_pipe;
 		};
-	}
-}
+	} // namespace windows
+} // namespace os
 
-#endif
+#endif // OS_WINDOWS_ASYNC_REQUEST
