@@ -27,7 +27,8 @@
 namespace os {
 	namespace windows {
 		class overlapped : public os::waitable {
-			OVERLAPPED data;
+			OVERLAPPED* data;
+			std::vector<char> data_buf;
 
 			public:
 			overlapped();

@@ -18,17 +18,23 @@
 #include "overlapped.hpp"
 
 os::windows::overlapped::overlapped() {
-	data.Internal = data.InternalHigh = data.Offset = data.OffsetHigh = 0;
-	data.Pointer = nullptr;
-	data.hEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
+	data_buf.resize(sizeof(OVERLAPPED) + sizeof(void*));
+	data = reinterpret_cast<OVERLAPPED*>(data_buf.data());
+	reinterpret_cast<void*&>(data_buf[sizeof(OVERLAPPED)]) = this;
+	
+	// Initialize OVERLAPPED
+	memset(data, 0, sizeof(OVERLAPPED));
+	data->hEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
 }
 
 os::windows::overlapped::~overlapped() {
-	CloseHandle(data.hEvent);
+	if (data_buf.size()) {
+		CloseHandle(data->hEvent);
+	}	
 }
 
 OVERLAPPED* os::windows::overlapped::get_overlapped_pointer() {
-	return &data;
+	return data;
 }
 
 void os::windows::overlapped::completion_routine(DWORD dwErrorCode, DWORD dwBytesTransmitted, OVERLAPPED* ov) {
@@ -38,5 +44,5 @@ void os::windows::overlapped::completion_routine(DWORD dwErrorCode, DWORD dwByte
 }
 
 void* os::windows::overlapped::get_waitable() {
-	return (void*)data.hEvent;
+	return (void*)data->hEvent;
 }
