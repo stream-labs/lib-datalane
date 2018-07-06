@@ -29,7 +29,7 @@ namespace os {
 	namespace windows {
 		class named_pipe;
 
-		class async_request : public os::windows::overlapped, public os::async_op {
+		class async_request : public os::windows::overlapped, public os::async_op, public os::waitable {
 			HANDLE handle = {0};
 
 			protected:
