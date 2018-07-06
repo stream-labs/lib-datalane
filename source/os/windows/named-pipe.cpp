@@ -193,7 +193,7 @@ os::error os::windows::named_pipe::total_available(size_t& avail) {
 
 os::error os::windows::named_pipe::read(std::unique_ptr<os::windows::async_request>& request, char* buffer, size_t buffer_length) {
 	if (!request) {
-		request = std::make_unique<os::windows::async_request>(handle);
+		request = std::make_unique<os::windows::async_request>();
 	}
 	request->set_handle(handle);
 
@@ -216,7 +216,7 @@ os::error os::windows::named_pipe::read(std::unique_ptr<os::windows::async_reque
 
 os::error os::windows::named_pipe::write(std::unique_ptr<os::windows::async_request>& request, const char* buffer, size_t buffer_length) {
 	if (!request) {
-		request = std::make_unique<os::windows::async_request>(handle);
+		request = std::make_unique<os::windows::async_request>();
 	}
 	request->set_handle(handle);
 
@@ -251,7 +251,7 @@ os::error os::windows::named_pipe::accept(std::unique_ptr<os::windows::async_req
 	}
 
 	if (!request) {
-		request = std::make_unique<os::windows::async_request>(handle);
+		request = std::make_unique<os::windows::async_request>();
 	}
 	request->set_handle(handle);
 
