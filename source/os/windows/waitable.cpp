@@ -22,9 +22,9 @@
 #endif
 #include <windows.h>
 
-os::error os::waitable::wait(waitable* item, std::chrono::nanoseconds timeout) {
+os::error os::waitable::wait(waitable *item, std::chrono::nanoseconds timeout) {
 	int64_t ms_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
-	HANDLE handle = (HANDLE)item->get_waitable();
+	HANDLE  handle     = (HANDLE)item->get_waitable();
 
 	SetLastError(ERROR_SUCCESS);
 	DWORD result = WaitForSingleObjectEx(handle, DWORD(ms_timeout), TRUE);
@@ -48,11 +48,12 @@ os::error os::waitable::wait(waitable* item, std::chrono::nanoseconds timeout) {
 	return os::error::Error;
 }
 
-os::error os::waitable::wait(waitable* item) {
+os::error os::waitable::wait(waitable *item) {
 	return wait(item, std::chrono::milliseconds(INFINITE));
 }
 
-os::error os::waitable::wait_any(waitable** items, size_t items_count, size_t& signalled_index, std::chrono::nanoseconds timeout) {
+os::error os::waitable::wait_any(waitable **items, size_t items_count, size_t &signalled_index,
+								 std::chrono::nanoseconds timeout) {
 	if (items == nullptr) {
 		throw std::invalid_argument("'items' can't be nullptr.");
 	} else if (items_count >= MAXIMUM_WAIT_OBJECTS) {
@@ -62,8 +63,8 @@ os::error os::waitable::wait_any(waitable** items, size_t items_count, size_t& s
 	// Need to create a sequential array of HANDLEs here.
 	std::vector<HANDLE> handles(items_count);
 	for (size_t idx = 0, eidx = items_count; idx < eidx; idx++) {
-		waitable* obj = items[idx];
-		handles[idx] = (HANDLE)obj->get_waitable();
+		waitable *obj = items[idx];
+		handles[idx]  = (HANDLE)obj->get_waitable();
 	}
 
 	int64_t ms_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
@@ -82,19 +83,21 @@ os::error os::waitable::wait_any(waitable** items, size_t items_count, size_t& s
 	return os::error::Error;
 }
 
-os::error os::waitable::wait_any(waitable** items, size_t items_count, size_t& signalled_index) {
+os::error os::waitable::wait_any(waitable **items, size_t items_count, size_t &signalled_index) {
 	return wait_any(items, items_count, signalled_index, std::chrono::milliseconds(INFINITE));
 }
 
-os::error os::waitable::wait_any(std::vector<waitable*> items, size_t& signalled_index, std::chrono::nanoseconds timeout) {
+os::error os::waitable::wait_any(std::vector<waitable *> items, size_t &signalled_index,
+								 std::chrono::nanoseconds timeout) {
 	return wait_any(items.data(), items.size(), signalled_index, timeout);
 }
 
-os::error os::waitable::wait_any(std::vector<waitable*> items, size_t& signalled_index) {
+os::error os::waitable::wait_any(std::vector<waitable *> items, size_t &signalled_index) {
 	return wait_any(items.data(), items.size(), signalled_index);
 }
 
-os::error os::waitable::wait_all(waitable** items, size_t items_count, size_t& signalled_index, std::chrono::nanoseconds timeout) {
+os::error os::waitable::wait_all(waitable **items, size_t items_count, size_t &signalled_index,
+								 std::chrono::nanoseconds timeout) {
 	if (items == nullptr) {
 		throw std::invalid_argument("'items' can't be nullptr.");
 	} else if (items_count >= MAXIMUM_WAIT_OBJECTS) {
@@ -104,8 +107,8 @@ os::error os::waitable::wait_all(waitable** items, size_t items_count, size_t& s
 	// Need to create a sequential array of HANDLEs here.
 	std::vector<HANDLE> handles(items_count);
 	for (size_t idx = 0, eidx = items_count; idx < eidx; idx++) {
-		waitable* obj = items[idx];
-		handles[idx] = (HANDLE)obj->get_waitable();
+		waitable *obj = items[idx];
+		handles[idx]  = (HANDLE)obj->get_waitable();
 	}
 
 	int64_t ms_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
@@ -124,14 +127,15 @@ os::error os::waitable::wait_all(waitable** items, size_t items_count, size_t& s
 	return os::error::Error;
 }
 
-os::error os::waitable::wait_all(waitable** items, size_t items_count, size_t& signalled_index) {
+os::error os::waitable::wait_all(waitable **items, size_t items_count, size_t &signalled_index) {
 	return wait_all(items, items_count, signalled_index, std::chrono::milliseconds(INFINITE));
 }
 
-os::error os::waitable::wait_all(std::vector<waitable*> items, size_t& signalled_index, std::chrono::nanoseconds timeout) {
+os::error os::waitable::wait_all(std::vector<waitable *> items, size_t &signalled_index,
+								 std::chrono::nanoseconds timeout) {
 	return wait_all(items.data(), items.size(), signalled_index, timeout);
 }
 
-os::error os::waitable::wait_all(std::vector<waitable*> items, size_t& signalled_index) {
+os::error os::waitable::wait_all(std::vector<waitable *> items, size_t &signalled_index) {
 	return wait_all(items.data(), items.size(), signalled_index);
 }

@@ -15,10 +15,10 @@
 ** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#include "semaphore.hpp"
-#include <locale>
 #include <codecvt>
+#include <locale>
 #include <string>
+#include "semaphore.hpp"
 
 inline std::wstring make_wide_string(std::string name) {
 	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
@@ -43,7 +43,7 @@ inline void validate_params(std::wstring name, int32_t initial_count, int32_t ma
 	}
 }
 
-inline void create_semaphore_impl(HANDLE& handle, std::wstring name, DWORD initial_count, DWORD maximum_count) {
+inline void create_semaphore_impl(HANDLE &handle, std::wstring name, DWORD initial_count, DWORD maximum_count) {
 	SetLastError(ERROR_SUCCESS);
 	handle = CreateSemaphoreW(NULL, initial_count, maximum_count, name.data());
 	if (!handle || (GetLastError() != ERROR_SUCCESS)) {
@@ -53,7 +53,7 @@ inline void create_semaphore_impl(HANDLE& handle, std::wstring name, DWORD initi
 	}
 }
 
-inline void open_semaphore_impl(HANDLE& handle, std::wstring name) {
+inline void open_semaphore_impl(HANDLE &handle, std::wstring name) {
 	SetLastError(ERROR_SUCCESS);
 	handle = OpenSemaphoreW(SYNCHRONIZE | SEMAPHORE_MODIFY_STATE, false, name.data());
 	if (!handle || (GetLastError() != ERROR_SUCCESS)) {
@@ -79,13 +79,15 @@ os::windows::semaphore::semaphore(int32_t initial_count /*= 0*/, int32_t maximum
 	}
 }
 
-os::windows::semaphore::semaphore(os::create_only_t, std::string name, int32_t initial_count /*= 0*/, int32_t maximum_count /*= UINT32_MAX*/) {
+os::windows::semaphore::semaphore(os::create_only_t, std::string name, int32_t initial_count /*= 0*/,
+								  int32_t maximum_count /*= UINT32_MAX*/) {
 	std::wstring wide_name = make_wide_string(name + '\0');
 	validate_params(wide_name, initial_count, maximum_count);
 	create_semaphore_impl(handle, wide_name, initial_count, maximum_count);
 }
 
-os::windows::semaphore::semaphore(os::create_or_open_t, std::string name, int32_t initial_count /*= 0*/, int32_t maximum_count /*= UINT32_MAX*/) {
+os::windows::semaphore::semaphore(os::create_or_open_t, std::string name, int32_t initial_count /*= 0*/,
+								  int32_t maximum_count /*= UINT32_MAX*/) {
 	std::wstring wide_name = make_wide_string(name + '\0');
 	validate_params(wide_name, initial_count, maximum_count);
 	try {
@@ -121,6 +123,6 @@ os::error os::windows::semaphore::signal(uint32_t count /*= 1*/) {
 	return os::error::Success;
 }
 
-void* os::windows::semaphore::get_waitable() {
-	return (void*)handle;
+void *os::windows::semaphore::get_waitable() {
+	return (void *)handle;
 }

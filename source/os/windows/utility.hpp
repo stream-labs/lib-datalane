@@ -15,8 +15,8 @@
 ** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#ifndef OS_WINDOWS_UTILITY
-#define OS_WINDOWS_UTILITY
+#ifndef OS_WINDOWS_UTILITY_HPP
+#define OS_WINDOWS_UTILITY_HPP
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -33,4 +33,4 @@ namespace os {
 	} // namespace windows
 } // namespace os
 
-#endif // OS_WINDOWS_UTILITY
+#endif // OS_WINDOWS_UTILITY_HPP

@@ -38,4 +38,4 @@ namespace datalane {
 	};
 }
 
-#endif
+#endif // DATALANE_ERROR_HPP

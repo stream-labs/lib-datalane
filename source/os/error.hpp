@@ -19,29 +19,29 @@
 #define OS_ERROR_HPP
 
 #include <cinttypes>
-#include <string>
 #include <iostream>
+#include <string>
 
 namespace os {
 	enum class error {
 		// Everything went right
-		Ok = 0,
+		Ok      = 0,
 		Success = Ok,
 
 		// Generic Error
 		Error,
-		
+
 		// The buffer you passed is invalid.
 		InvalidBuffer,
 
 		// Buffer too small.
 		BufferTooSmall,
-		
+
 		// Buffer too large.
 		BufferTooLarge,
 
 		// read() has more data available.
-		MoreData, 
+		MoreData,
 
 		// Timed out
 		TimedOut,
@@ -58,4 +58,4 @@ namespace os {
 	};
 }
 
-#endif
+#endif // OS_ERROR_HPP

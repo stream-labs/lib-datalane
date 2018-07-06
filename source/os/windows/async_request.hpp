@@ -15,8 +15,8 @@
 ** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#ifndef OS_WINDOWS_ASYNC_REQUEST
-#define OS_WINDOWS_ASYNC_REQUEST
+#ifndef OS_WINDOWS_ASYNC_REQUEST_HPP
+#define OS_WINDOWS_ASYNC_REQUEST_HPP
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -29,8 +29,7 @@ namespace os {
 	namespace windows {
 		class named_pipe;
 
-		class async_request : public os::windows::overlapped,
-		                      public os::async_op {
+		class async_request : public os::windows::overlapped, public os::async_op {
 			HANDLE handle = {0};
 
 			protected:
@@ -39,9 +38,7 @@ namespace os {
 
 			void set_valid(bool valid);
 
-			static void completion_routine(DWORD dwErrorCode,
-			                               DWORD dwBytesTransmitted,
-			                               OVERLAPPED *ov);
+			static void completion_routine(DWORD dwErrorCode, DWORD dwBytesTransmitted, OVERLAPPED *ov);
 
 			// os::waitable
 			virtual void *get_waitable() override;
@@ -65,4 +62,4 @@ namespace os {
 	} // namespace windows
 } // namespace os
 
-#endif // OS_WINDOWS_ASYNC_REQUEST
+#endif // OS_WINDOWS_ASYNC_REQUEST_HPP

@@ -18,29 +18,28 @@
 #ifndef DATALANE_SOCKET_HPP
 #define DATALANE_SOCKET_HPP
 
-#include "datalane-error.hpp"
 #include <memory>
+#include "datalane-error.hpp"
 
 namespace datalane {
 	class socket {
 		public:
-		virtual size_t avail() = 0;
+		virtual size_t avail()       = 0;
 		virtual size_t avail_total() = 0;
 
-		virtual error write(void* buffer, size_t length, size_t& write_length) = 0;
-		virtual error read(void* buffer, size_t max_length, size_t& read_length) = 0;
+		virtual error write(void *buffer, size_t length, size_t &write_length)   = 0;
+		virtual error read(void *buffer, size_t max_length, size_t &read_length) = 0;
 
-		virtual bool connected() = 0;
+		virtual bool  connected()  = 0;
 		virtual error disconnect() = 0;
-		
+
 		virtual bool good() = 0;
 		virtual bool bad();
 
 		public: // listen() only
-		virtual bool pending() = 0;
-		virtual error accept(std::shared_ptr<datalane::socket>& socket) = 0;
-
+		virtual bool  pending()                                         = 0;
+		virtual error accept(std::shared_ptr<datalane::socket> &socket) = 0;
 	};
-}
+} // namespace datalane
 
-#endif
+#endif // DATALANE_SOCKET_HPP

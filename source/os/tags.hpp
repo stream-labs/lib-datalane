@@ -31,6 +31,6 @@ namespace os {
 
 	static const open_only_t open_only = open_only_t();
 
-}
+} // namespace os
 
-#endif
+#endif // OS_TAGS_HPP

@@ -21,9 +21,7 @@
 #include "datalane-socket.hpp"
 
 namespace datalane {
-	class server_socket : public datalane::socket {
+	class server_socket : public datalane::socket {};
+} // namespace datalane
 
-	};
-}
-
-#endif
+#endif // DATALANE_SOCKET_SERVER_HPP

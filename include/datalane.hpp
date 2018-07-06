@@ -24,6 +24,6 @@
 namespace datalane {
 	static std::shared_ptr<datalane::socket> listen(std::string socket, size_t backlog = -1);
 	static std::shared_ptr<datalane::socket> connect(std::string socket);
-}
+} // namespace datalane
 
-#endif
+#endif // DATALANE_HPP

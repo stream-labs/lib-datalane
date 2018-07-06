@@ -15,8 +15,8 @@
 ** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#ifndef OS_WAITABLE
-#define OS_WAITABLE
+#ifndef OS_WAITABLE_HPP
+#define OS_WAITABLE_HPP
 
 #include <chrono>
 #include <vector>
@@ -25,11 +25,9 @@
 namespace os {
 	class waitable {
 		protected:
-
-		virtual void* get_waitable() = 0;
+		virtual void *get_waitable() = 0;
 
 		public:
-
 		inline os::error wait() {
 			return os::waitable::wait(this);
 		};
@@ -37,22 +35,30 @@ namespace os {
 			return os::waitable::wait(this, timeout);
 		};
 
-		static os::error wait(waitable* item);
-		static os::error wait(waitable* item, std::chrono::nanoseconds timeout);
+		static os::error wait(waitable *item);
 
-		static os::error wait_any(waitable** items, size_t items_count, size_t& signalled_index);
-		static os::error wait_any(waitable** items, size_t items_count, size_t& signalled_index, std::chrono::nanoseconds timeout);
+		static os::error wait(waitable *item, std::chrono::nanoseconds timeout);
 
-		static os::error wait_any(std::vector<waitable*> items, size_t& signalled_index);
-		static os::error wait_any(std::vector<waitable*> items, size_t& signalled_index, std::chrono::nanoseconds timeout);
+		static os::error wait_any(waitable **items, size_t items_count, size_t &signalled_index);
 
-		static os::error wait_all(waitable** items, size_t items_count, size_t& signalled_index);
-		static os::error wait_all(waitable** items, size_t items_count, size_t& signalled_index, std::chrono::nanoseconds timeout);
+		static os::error wait_any(waitable **items, size_t items_count, size_t &signalled_index,
+								  std::chrono::nanoseconds timeout);
 
-		static os::error wait_all(std::vector<waitable*> items, size_t& signalled_index);
-		static os::error wait_all(std::vector<waitable*> items, size_t& signalled_index, std::chrono::nanoseconds timeout);
+		static os::error wait_any(std::vector<waitable *> items, size_t &signalled_index);
 
+		static os::error wait_any(std::vector<waitable *> items, size_t &signalled_index,
+								  std::chrono::nanoseconds timeout);
+
+		static os::error wait_all(waitable **items, size_t items_count, size_t &signalled_index);
+
+		static os::error wait_all(waitable **items, size_t items_count, size_t &signalled_index,
+								  std::chrono::nanoseconds timeout);
+
+		static os::error wait_all(std::vector<waitable *> items, size_t &signalled_index);
+
+		static os::error wait_all(std::vector<waitable *> items, size_t &signalled_index,
+								  std::chrono::nanoseconds timeout);
 	};
-}
+} // namespace os
 
-#endif
+#endif // OS_WAITABLE_HPP

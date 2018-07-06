@@ -18,10 +18,10 @@
 #include "overlapped.hpp"
 
 os::windows::overlapped::overlapped() {
-	data_buf.resize(sizeof(OVERLAPPED) + sizeof(void*));
-	data = reinterpret_cast<OVERLAPPED*>(data_buf.data());
-	reinterpret_cast<void*&>(data_buf[sizeof(OVERLAPPED)]) = this;
-	
+	data_buf.resize(sizeof(OVERLAPPED) + sizeof(void *));
+	data                                                    = reinterpret_cast<OVERLAPPED *>(data_buf.data());
+	reinterpret_cast<void *&>(data_buf[sizeof(OVERLAPPED)]) = this;
+
 	// Initialize OVERLAPPED
 	memset(data, 0, sizeof(OVERLAPPED));
 	data->hEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
@@ -30,19 +30,19 @@ os::windows::overlapped::overlapped() {
 os::windows::overlapped::~overlapped() {
 	if (data_buf.size()) {
 		CloseHandle(data->hEvent);
-	}	
+	}
 }
 
-OVERLAPPED* os::windows::overlapped::get_overlapped_pointer() {
+OVERLAPPED *os::windows::overlapped::get_overlapped_pointer() {
 	return data;
 }
 
-void os::windows::overlapped::completion_routine(DWORD dwErrorCode, DWORD dwBytesTransmitted, OVERLAPPED* ov) {
+void os::windows::overlapped::completion_routine(DWORD dwErrorCode, DWORD dwBytesTransmitted, OVERLAPPED *ov) {
 	if (dwErrorCode == ERROR_SUCCESS) {
 		SetEvent(ov->hEvent);
 	}
 }
 
-void* os::windows::overlapped::get_waitable() {
-	return (void*)data->hEvent;
+void *os::windows::overlapped::get_waitable() {
+	return (void *)data->hEvent;
 }

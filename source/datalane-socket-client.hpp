@@ -22,9 +22,7 @@
 #include "os-namedsocket.hpp"
 
 namespace datalane {
-	class client_socket : public datalane::socket {
+	class client_socket : public datalane::socket {};
+} // namespace datalane
 
-	};
-}
-
-#endif
+#endif // DATALANE_SOCKET_CLIENT_HPP

@@ -21,10 +21,11 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include <windows.h>
+
 #include <inttypes.h>
-#include <string>
 #include <memory>
+#include <string>
+#include <windows.h>
 #include "../error.hpp"
 #include "../tags.hpp"
 #include "async_request.hpp"
@@ -47,32 +48,35 @@ namespace os {
 
 		class named_pipe {
 			HANDLE handle;
-			bool created = false;
-			
+			bool   created = false;
+
 			public:
-			named_pipe(os::create_only_t, std::string name, size_t max_instances = PIPE_UNLIMITED_INSTANCES, pipe_type type = pipe_type::Message, pipe_read_mode mode = pipe_read_mode::Message, bool is_unique = false);
-			named_pipe(os::create_or_open_t, std::string name, size_t max_instances = PIPE_UNLIMITED_INSTANCES, pipe_type type = pipe_type::Message, pipe_read_mode mode = pipe_read_mode::Message, bool is_unique = false);
+			named_pipe(os::create_only_t, std::string name, size_t max_instances = PIPE_UNLIMITED_INSTANCES,
+					   pipe_type type = pipe_type::Message, pipe_read_mode mode = pipe_read_mode::Message,
+					   bool is_unique = false);
+			named_pipe(os::create_or_open_t, std::string name, size_t max_instances = PIPE_UNLIMITED_INSTANCES,
+					   pipe_type type = pipe_type::Message, pipe_read_mode mode = pipe_read_mode::Message,
+					   bool is_unique = false);
 			named_pipe(os::open_only_t, std::string name, pipe_read_mode mode = pipe_read_mode::Message);
 			~named_pipe();
 
-			os::error available(size_t& avail);
+			os::error available(size_t &avail);
 
-			os::error total_available(size_t& avail);
+			os::error total_available(size_t &avail);
 
-			os::error read(std::unique_ptr<os::windows::async_request>& request, char* buffer, size_t buffer_length);
+			os::error read(std::unique_ptr<os::windows::async_request> &request, char *buffer, size_t buffer_length);
 
-			os::error write(std::unique_ptr<os::windows::async_request>& request, const char* buffer, size_t buffer_length);
-			
+			os::error write(std::unique_ptr<os::windows::async_request> &request, const char *buffer,
+							size_t buffer_length);
+
 			bool is_created();
-			
+
 			bool is_connected();
 
 			public: // created only
-
-			os::error accept(std::unique_ptr<os::windows::async_request>& request);
-
+			os::error accept(std::unique_ptr<os::windows::async_request> &request);
 		};
-	}
-}
+	} // namespace windows
+} // namespace os
 
-#endif
+#endif // OS_WINDOWS_NAMED_PIPE_HPP

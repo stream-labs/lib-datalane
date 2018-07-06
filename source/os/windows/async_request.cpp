@@ -27,26 +27,19 @@ void os::windows::async_request::set_valid(bool valid) {
 	this->valid = valid;
 }
 
-void os::windows::async_request::completion_routine(DWORD dwErrorCode,
-                                                    DWORD dwBytesTransmitted,
-                                                    OVERLAPPED *ov) {
+void os::windows::async_request::completion_routine(DWORD dwErrorCode, DWORD dwBytesTransmitted, OVERLAPPED *ov) {
 	os::windows::overlapped *ovp =
-	 reinterpret_cast<os::windows::overlapped *>(
-	  reinterpret_cast<char *>(ov) + sizeof(OVERLAPPED));
+		reinterpret_cast<os::windows::overlapped *>(reinterpret_cast<char *>(ov) + sizeof(OVERLAPPED));
 
-	os::windows::async_request *ar =
-	 static_cast<os::windows::async_request *>(ovp);
+	os::windows::async_request *ar = static_cast<os::windows::async_request *>(ovp);
 
 	if (ar) {
 		if (ar->callback) {
-			ar->callback(
-			 os::windows::utility::translate_error(dwErrorCode),
-			 dwBytesTransmitted);
+			ar->callback(os::windows::utility::translate_error(dwErrorCode), dwBytesTransmitted);
 		}
 	}
 
-	os::windows::overlapped::completion_routine(
-	 dwErrorCode, dwBytesTransmitted, ov);
+	os::windows::overlapped::completion_routine(dwErrorCode, dwBytesTransmitted, ov);
 }
 
 void *os::windows::async_request::get_waitable() {
@@ -82,8 +75,7 @@ size_t os::windows::async_request::get_bytes_transferred() {
 
 	DWORD bytes = 0;
 	SetLastError(ERROR_SUCCESS);
-	GetOverlappedResult(
-	 handle, this->get_overlapped_pointer(), &bytes, false);
+	GetOverlappedResult(handle, this->get_overlapped_pointer(), &bytes, false);
 	if (GetLastError() == ERROR_IO_INCOMPLETE) {
 		return 0;
 	}

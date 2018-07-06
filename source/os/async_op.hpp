@@ -24,8 +24,7 @@
 #include "waitable.hpp"
 
 namespace os {
-	typedef std::function<void(os::error success, size_t length)>
-	 async_op_cb_t;
+	typedef std::function<void(os::error success, size_t length)> async_op_cb_t;
 
 	class async_op : public os::waitable {
 		protected:

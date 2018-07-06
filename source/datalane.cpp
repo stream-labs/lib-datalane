@@ -19,8 +19,7 @@
 #include "datalane-socket-server.hpp"
 #include "datalane.hpp"
 
-std::shared_ptr<datalane::socket> datalane::listen(std::string socket,
-                                                   size_t backlog /*= -1*/) {
+std::shared_ptr<datalane::socket> datalane::listen(std::string socket, size_t backlog /*= -1*/) {
 	throw std::exception("Not implemented yet.");
 	//std::shared_ptr<datalane::server_socket> sock =
 	// std::make_shared<datalane::server_socket>(socket, backlog);
