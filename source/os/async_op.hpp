@@ -18,35 +18,35 @@
 #ifndef OS_ASYNC_OP_HPP
 #define OS_ASYNC_OP_HPP
 
-#include <chrono>
-#include <vector>
 #include <functional>
+#include <inttypes.h>
 #include "error.hpp"
 #include "waitable.hpp"
 
 namespace os {
-	typedef std::function<void(bool success, size_t length)> async_op_cb_t;
+	typedef std::function<void(os::error success, size_t length)>
+	 async_op_cb_t;
 
 	class async_op : public os::waitable {
-		bool valid = false;
+		protected:
+		bool          valid = false;
 		async_op_cb_t callback;
-		
+
 		public:
-		async_op() {};
-		async_op(async_op_cb_t u_callback) : callback(u_callback) {};
-		virtual ~async_op() {};
+		async_op(){};
+		async_op(async_op_cb_t u_callback) : callback(u_callback){};
+		virtual ~async_op(){};
 
 		virtual bool is_valid() = 0;
 
-		virtual bool invalidate() = 0;
+		virtual void invalidate() = 0;
 
 		virtual bool is_complete() = 0;
 
 		virtual size_t get_bytes_transferred() = 0;
 
 		virtual bool cancel() = 0;
-
 	};
-}
+} // namespace os
 
-#endif
+#endif // OS_ASYNC_OP_HPP
