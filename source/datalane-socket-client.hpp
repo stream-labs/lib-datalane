@@ -22,27 +22,8 @@
 #include "os-namedsocket.hpp"
 
 namespace datalane {
-	class client_socket : public socket {
-		std::shared_ptr<os::named_socket> socket;
-		std::shared_ptr<os::named_socket_connection> connection;
+	class client_socket : public datalane::socket {
 
-		public:
-		client_socket(std::string name);
-		client_socket(std::shared_ptr<os::named_socket_connection> connection);
-
-		virtual size_t avail() override;
-		virtual size_t avail_total() override;
-
-		virtual error write(void* buffer, size_t length, size_t& write_length) override;
-		virtual error read(void* buffer, size_t max_length, size_t& read_length) override;
-		
-		virtual bool connected() override;
-		virtual error disconnect() override;
-		
-		virtual bool good() override;
-		
-		virtual bool pending() override;
-		virtual error accept(std::shared_ptr<datalane::socket>& socket) override;
 	};
 }
 

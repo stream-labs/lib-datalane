@@ -18,7 +18,6 @@
 #ifndef DATALANE_SOCKET_HPP
 #define DATALANE_SOCKET_HPP
 
-#include "datalane.hpp"
 #include "datalane-error.hpp"
 #include <memory>
 

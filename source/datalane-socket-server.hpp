@@ -19,24 +19,10 @@
 #define DATALANE_SOCKET_SERVER_HPP
 
 #include "datalane-socket.hpp"
-#include "os-namedsocket.hpp"
 
 namespace datalane {
-	class server_socket : public socket {
-		std::shared_ptr<os::named_socket> named_socket;
+	class server_socket : public datalane::socket {
 
-		public:
-		server_socket(std::string name, size_t backlog = -1);
-		~server_socket();
-
-		public:
-		virtual error write(void* buffer, size_t length, size_t& write_length) override;
-		virtual error read(void* buffer, size_t max_length, size_t& read_length) override;
-		virtual error disconnect() override;
-		virtual bool connected() override;
-		virtual bool good() override;
-		virtual bool pending() override;
-		virtual error accept(std::shared_ptr<datalane::socket>& socket) override;
 	};
 }
 
