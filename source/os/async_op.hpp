@@ -31,6 +31,8 @@ namespace os {
 		bool          valid = false;
 		async_op_cb_t callback;
 
+		virtual void *get_waitable() override = 0;
+
 		public:
 		async_op(){};
 		async_op(async_op_cb_t u_callback) : callback(u_callback){};
