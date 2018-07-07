@@ -56,20 +56,24 @@ os::error os::waitable::wait_any(waitable **items, size_t items_count, size_t &s
 								 std::chrono::nanoseconds timeout) {
 	if (items == nullptr) {
 		throw std::invalid_argument("'items' can't be nullptr.");
-	} else if (items_count >= MAXIMUM_WAIT_OBJECTS) {
+	} else if (items_count > MAXIMUM_WAIT_OBJECTS) {
 		throw std::invalid_argument("Too many items to wait for.");
 	}
 
 	// Need to create a sequential array of HANDLEs here.
+	size_t              valid_handles = 0;
 	std::vector<HANDLE> handles(items_count);
 	for (size_t idx = 0, eidx = items_count; idx < eidx; idx++) {
 		waitable *obj = items[idx];
-		handles[idx]  = (HANDLE)obj->get_waitable();
+		if (obj) {
+			handles[valid_handles] = (HANDLE)obj->get_waitable();
+			valid_handles++;
+		}		
 	}
 
 	int64_t ms_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
 
-	DWORD result = WaitForMultipleObjects(DWORD(handles.size()), handles.data(), false, DWORD(ms_timeout));
+	DWORD result = WaitForMultipleObjects(DWORD(valid_handles), handles.data(), false, DWORD(ms_timeout));
 	if ((result >= WAIT_OBJECT_0) && result < (WAIT_OBJECT_0 + MAXIMUM_WAIT_OBJECTS)) {
 		signalled_index = result - WAIT_OBJECT_0;
 		return os::error::Success;
@@ -105,15 +109,19 @@ os::error os::waitable::wait_all(waitable **items, size_t items_count, size_t &s
 	}
 
 	// Need to create a sequential array of HANDLEs here.
+	size_t              valid_handles = 0;
 	std::vector<HANDLE> handles(items_count);
 	for (size_t idx = 0, eidx = items_count; idx < eidx; idx++) {
 		waitable *obj = items[idx];
-		handles[idx]  = (HANDLE)obj->get_waitable();
+		if (obj) {
+			handles[valid_handles] = (HANDLE)obj->get_waitable();
+			valid_handles++;
+		}
 	}
 
 	int64_t ms_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
 
-	DWORD result = WaitForMultipleObjects(DWORD(handles.size()), handles.data(), true, DWORD(ms_timeout));
+	DWORD result = WaitForMultipleObjects(DWORD(valid_handles), handles.data(), true, DWORD(ms_timeout));
 	if ((result >= WAIT_OBJECT_0) && result < (WAIT_OBJECT_0 + MAXIMUM_WAIT_OBJECTS)) {
 		signalled_index = result - WAIT_OBJECT_0;
 		return os::error::Success;
