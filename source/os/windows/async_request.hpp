@@ -29,20 +29,16 @@ namespace os {
 	namespace windows {
 		class named_pipe;
 
-		class async_request : public os::windows::overlapped, public os::async_op, public os::waitable {
-			HANDLE handle = {0};
-
+		class async_request : public os::async_op, protected os::windows::overlapped {
 			protected:
-			// os::windows::overlapped
+			HANDLE                  handle = {0};
+
 			void set_handle(HANDLE handle);
 
 			void set_valid(bool valid);
 
 			static void completion_routine(DWORD dwErrorCode, DWORD dwBytesTransmitted, OVERLAPPED *ov);
-
-			// os::waitable
-			virtual void *get_waitable() override;
-
+			
 			public:
 			~async_request();
 
@@ -55,6 +51,9 @@ namespace os {
 			virtual size_t get_bytes_transferred() override;
 
 			virtual bool cancel() override;
+
+			// os::waitable
+			virtual void *get_waitable() override;
 
 			public:
 			friend class named_pipe;
