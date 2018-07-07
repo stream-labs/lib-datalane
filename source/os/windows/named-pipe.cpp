@@ -211,7 +211,7 @@ os::error os::windows::named_pipe::read(std::unique_ptr<os::windows::async_reque
 
 	SetLastError(ERROR_SUCCESS);
 	if (!ReadFileEx(handle, buffer, DWORD(buffer_length), request->get_overlapped_pointer(),
-					overlapped::completion_routine)
+					os::windows::async_request::completion_routine)
 		|| (GetLastError() != ERROR_SUCCESS)) {
 		DWORD error = GetLastError();
 		if (error == ERROR_MORE_DATA) {
@@ -237,7 +237,7 @@ os::error os::windows::named_pipe::write(std::unique_ptr<os::windows::async_requ
 
 	SetLastError(ERROR_SUCCESS);
 	if (!WriteFileEx(handle, buffer, DWORD(buffer_length), request->get_overlapped_pointer(),
-					 overlapped::completion_routine)
+					 os::windows::async_request::completion_routine)
 		|| (GetLastError() != ERROR_SUCCESS)) {
 		DWORD error = GetLastError();
 		if (error == ERROR_MORE_DATA) {
