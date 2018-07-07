@@ -28,7 +28,7 @@
 namespace os {
 	namespace windows {
 		namespace utility {
-			inline os::error translate_error(DWORD error_code);
+			os::error translate_error(DWORD error_code);
 		};
 	} // namespace windows
 } // namespace os
