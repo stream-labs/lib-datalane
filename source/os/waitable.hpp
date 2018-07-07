@@ -24,10 +24,9 @@
 
 namespace os {
 	class waitable {
-		protected:
+		public:
 		virtual void *get_waitable() = 0;
 
-		public:
 		inline os::error wait() {
 			return os::waitable::wait(this);
 		};
