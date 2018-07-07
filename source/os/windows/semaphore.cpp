@@ -45,8 +45,9 @@ inline void validate_params(std::wstring name, int32_t initial_count, int32_t ma
 
 inline void create_semaphore_impl(HANDLE &handle, std::wstring name, DWORD initial_count, DWORD maximum_count) {
 	SetLastError(ERROR_SUCCESS);
-	handle = CreateSemaphoreW(NULL, initial_count, maximum_count, name.data());
-	if (!handle || (GetLastError() != ERROR_SUCCESS)) {
+	handle    = CreateSemaphoreW(NULL, initial_count, maximum_count, name.data());
+	DWORD err = GetLastError();
+	if (!handle || (err != ERROR_SUCCESS)) {
 		std::vector<char> msg(2048);
 		sprintf_s(msg.data(), msg.size(), "Semaphore creation failed with error code %lX.\0", GetLastError());
 		throw std::runtime_error(msg.data());
@@ -55,8 +56,9 @@ inline void create_semaphore_impl(HANDLE &handle, std::wstring name, DWORD initi
 
 inline void open_semaphore_impl(HANDLE &handle, std::wstring name) {
 	SetLastError(ERROR_SUCCESS);
-	handle = OpenSemaphoreW(SYNCHRONIZE | SEMAPHORE_MODIFY_STATE, false, name.data());
-	if (!handle || (GetLastError() != ERROR_SUCCESS)) {
+	handle    = OpenSemaphoreW(SYNCHRONIZE | SEMAPHORE_MODIFY_STATE, false, name.data());
+	DWORD err = GetLastError();
+	if (!handle || (err != ERROR_SUCCESS)) {
 		std::vector<char> msg(2048);
 		sprintf_s(msg.data(), msg.size(), "Opening Semaphore failed with error code %lX.\0", GetLastError());
 		throw std::runtime_error(msg.data());
