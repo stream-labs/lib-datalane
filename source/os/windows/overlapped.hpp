@@ -26,9 +26,9 @@
 
 namespace os {
 	namespace windows {
-		class overlapped : public os::waitable {
-			OVERLAPPED *      data;
-			std::vector<char> data_buf;
+		class overlapped {
+			OVERLAPPED *      ov;
+			std::vector<char> ov_buf;
 
 			public:
 			overlapped();
@@ -36,11 +36,11 @@ namespace os {
 
 			OVERLAPPED *get_overlapped_pointer();
 
-			static void completion_routine(DWORD dwErrorCode, DWORD dwBytesTransmitted, OVERLAPPED *ov);
+			static overlapped *get_pointer_from_overlapped(OVERLAPPED * ov);
 
-			// os::waitable
-			protected:
-			virtual void *get_waitable() override;
+			void signal();
+
+			virtual void *get_waitable();
 		};
 	} // namespace windows
 } // namespace os
