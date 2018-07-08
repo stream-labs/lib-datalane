@@ -15,12 +15,14 @@
 ** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#include "../waitable.hpp"
-
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
+
 #include <windows.h>
+#include "../waitable.hpp"
+#include "overlapped.hpp"
+#include "async_request.hpp"
 
 os::error os::waitable::wait(waitable *item, std::chrono::nanoseconds timeout) {
 	int64_t ms_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
@@ -29,6 +31,14 @@ os::error os::waitable::wait(waitable *item, std::chrono::nanoseconds timeout) {
 	SetLastError(ERROR_SUCCESS);
 	DWORD result = WaitForSingleObjectEx(handle, DWORD(ms_timeout), TRUE);
 	if (result == WAIT_OBJECT_0) {
+		os::windows::overlapped *ov = dynamic_cast<os::windows::overlapped *>(item);
+		if (ov) {
+			os::windows::async_request *ar = dynamic_cast<os::windows::async_request *>(ov);
+			if (ar) {
+				os::windows::async_request::completion_routine(result, 0, ov->get_overlapped_pointer());
+			}
+		}
+
 		return os::error::Success;
 	} else if (result = WAIT_TIMEOUT) {
 		return os::error::TimedOut;
@@ -63,19 +73,30 @@ os::error os::waitable::wait_any(waitable **items, size_t items_count, size_t &s
 	// Need to create a sequential array of HANDLEs here.
 	size_t              valid_handles = 0;
 	std::vector<HANDLE> handles(items_count);
+	std::vector<waitable *> waits(items_count);
 	for (size_t idx = 0, eidx = items_count; idx < eidx; idx++) {
 		waitable *obj = items[idx];
 		if (obj) {
 			handles[valid_handles] = (HANDLE)obj->get_waitable();
+			waits[valid_handles]   = obj;
 			valid_handles++;
-		}		
+		}
 	}
 
 	int64_t ms_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
 
 	DWORD result = WaitForMultipleObjects(DWORD(valid_handles), handles.data(), false, DWORD(ms_timeout));
 	if ((result >= WAIT_OBJECT_0) && result < (WAIT_OBJECT_0 + MAXIMUM_WAIT_OBJECTS)) {
-		signalled_index = result - WAIT_OBJECT_0;
+		signalled_index             = result - WAIT_OBJECT_0;
+
+		os::windows::overlapped *ov = dynamic_cast<os::windows::overlapped *>(waits[signalled_index]);
+		if (ov) {
+			os::windows::async_request *ar = dynamic_cast<os::windows::async_request *>(ov);
+			if (ar) {
+				os::windows::async_request::completion_routine(result, 0, ov->get_overlapped_pointer());
+			}
+		}
+
 		return os::error::Success;
 	} else if (result = WAIT_TIMEOUT) {
 		signalled_index = -1;
@@ -110,11 +131,13 @@ os::error os::waitable::wait_all(waitable **items, size_t items_count, size_t &s
 
 	// Need to create a sequential array of HANDLEs here.
 	size_t              valid_handles = 0;
-	std::vector<HANDLE> handles(items_count);
+	std::vector<HANDLE>     handles(items_count);
+	std::vector<waitable *> waits(items_count);
 	for (size_t idx = 0, eidx = items_count; idx < eidx; idx++) {
 		waitable *obj = items[idx];
 		if (obj) {
 			handles[valid_handles] = (HANDLE)obj->get_waitable();
+			waits[valid_handles]   = obj;
 			valid_handles++;
 		}
 	}
@@ -124,6 +147,15 @@ os::error os::waitable::wait_all(waitable **items, size_t items_count, size_t &s
 	DWORD result = WaitForMultipleObjects(DWORD(valid_handles), handles.data(), true, DWORD(ms_timeout));
 	if ((result >= WAIT_OBJECT_0) && result < (WAIT_OBJECT_0 + MAXIMUM_WAIT_OBJECTS)) {
 		signalled_index = result - WAIT_OBJECT_0;
+
+		os::windows::overlapped *ov = dynamic_cast<os::windows::overlapped *>(waits[signalled_index]);
+		if (ov) {
+			os::windows::async_request *ar = dynamic_cast<os::windows::async_request *>(ov);
+			if (ar) {
+				os::windows::async_request::completion_routine(result, 0, ov->get_overlapped_pointer());
+			}
+		}
+
 		return os::error::Success;
 	} else if (result = WAIT_TIMEOUT) {
 		signalled_index = -1;

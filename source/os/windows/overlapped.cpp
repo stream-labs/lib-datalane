@@ -48,3 +48,7 @@ void os::windows::overlapped::signal() {
 void *os::windows::overlapped::get_waitable() {
 	return (void *)ov->hEvent;
 }
+
+void os::windows::overlapped::completion_routine(DWORD dwErrorCode, DWORD dwBytesTransmitted, OVERLAPPED *ov) {
+	SetEvent(ov->hEvent);
+}

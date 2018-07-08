@@ -263,18 +263,23 @@ os::error os::windows::named_pipe::read(char *buffer, size_t buffer_length, std:
 	ar->set_handle(handle);
 
 	SetLastError(ERROR_SUCCESS);
-	if (!ReadFileEx(handle, buffer, DWORD(buffer_length), ar->get_overlapped_pointer(),
-					os::windows::async_request::completion_routine)
-		|| (GetLastError() != ERROR_SUCCESS)) {
-		os::error error = utility::translate_error(GetLastError());
-		if (error != os::error::Success) {
+	BOOL suc =
+		ReadFileEx(handle, buffer, DWORD(buffer_length), ar->get_overlapped_pointer(), overlapped::completion_routine);
+	DWORD error = GetLastError();
+
+	if (!suc || (error != ERROR_SUCCESS)) {
+		os::error ec = utility::translate_error(GetLastError());
+		if (ec != os::error::Success) {
 			ar->cancel();
 		}
-		return error;
+		return ec;
 	}
 
 	ar->set_valid(true);
 	op = std::static_pointer_cast<os::async_op>(ar);
+
+	os::windows::async_request::completion_routine(error, buffer_length, ar->get_overlapped_pointer());
+
 	return os::error::Success;
 }
 
@@ -288,18 +293,22 @@ os::error os::windows::named_pipe::write(const char *buffer, size_t buffer_lengt
 	ar->set_handle(handle);
 
 	SetLastError(ERROR_SUCCESS);
-	if (!WriteFileEx(handle, buffer, DWORD(buffer_length), ar->get_overlapped_pointer(),
-					 os::windows::async_request::completion_routine)
-		|| (GetLastError() != ERROR_SUCCESS)) {
-		os::error error = utility::translate_error(GetLastError());
-		if (error != os::error::Success) {
+	BOOL suc =
+		WriteFileEx(handle, buffer, DWORD(buffer_length), ar->get_overlapped_pointer(), overlapped::completion_routine);
+	DWORD error = GetLastError();
+
+	if (!suc || (error != ERROR_SUCCESS)) {
+		os::error ec = utility::translate_error(GetLastError());
+		if (ec != os::error::Success) {
 			ar->cancel();
 		}
-		return error;
+		return ec;
 	}
-
+	
 	ar->set_valid(true);
 	op = std::static_pointer_cast<os::async_op>(ar);
+
+	os::windows::async_request::completion_routine(error, buffer_length, ar->get_overlapped_pointer());
 	return os::error::Success;
 }
 
@@ -308,8 +317,9 @@ bool os::windows::named_pipe::is_created() {
 }
 
 bool os::windows::named_pipe::is_connected() {
-	size_t avail;
-	return available(avail) == os::error::Success;
+	SetLastError(ERROR_SUCCESS);
+	PeekNamedPipe(handle, NULL, NULL, NULL, NULL, NULL);
+	return (GetLastError() == ERROR_SUCCESS);
 }
 
 os::error os::windows::named_pipe::accept(std::unique_ptr<os::windows::async_request> &request) {
@@ -330,6 +340,7 @@ os::error os::windows::named_pipe::accept(std::unique_ptr<os::windows::async_req
 		} else if (error == ERROR_BROKEN_PIPE) {
 			return os::error::Disconnected;
 		} else if (error == ERROR_PIPE_CONNECTED) {
+			os::windows::async_request::completion_routine(error, 0, request->get_overlapped_pointer());
 			return os::error::Connected;
 		} else if (error != ERROR_IO_PENDING) {
 			return os::error::Error;

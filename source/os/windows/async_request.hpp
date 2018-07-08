@@ -57,6 +57,7 @@ namespace os {
 
 			public:
 			friend class named_pipe;
+			friend class waitable;
 		};
 	} // namespace windows
 } // namespace os

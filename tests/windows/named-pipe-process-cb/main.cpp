@@ -34,7 +34,7 @@ using namespace std::placeholders;
 
 #define SERVER_CLIENT_CHANNEL "DataSend1"
 #define CLIENT_SERVER_CHANNEL "DataRecv1"
-#define CLIENT_MAX_MESSAGES 100000
+#define CLIENT_MAX_MESSAGES 10000
 
 std::vector<std::string> messages = {
 	"This is a test message",
@@ -133,6 +133,7 @@ struct server_data {
 
 		if (err == os::error::Success) {
 			count_recv++;
+			//shared::logger::log("Read message %lld of %lld, content '%.*s'.", count_recv, CLIENT_MAX_MESSAGES, bytes - 1, read_buf.data() + 1);
 			send_message(read_buf);
 		}
 
@@ -176,6 +177,7 @@ struct server_data {
 		if (err == os::error::Success) {
 			sout.signal();
 			count_send++;
+			//shared::logger::log("Sent message %lld of %lld.", count_send, CLIENT_MAX_MESSAGES);
 
 			if (write_queue.size() > 0) {
 				write_buf.swap(write_queue.front());
@@ -260,68 +262,12 @@ struct server_data {
 
 int server(int argc, const char *argv[]) {
 	server_data sd;
-
+	shared::logger::log("Server initialized.");
 	shared::os::process client(std::string(argv[0]), std::string(argv[0]) + " client",
 							   shared::os::get_working_directory());
 	shared::logger::log("Client spawned.");
-
-	shared::logger::log("Server initialized.");
 	sd.loop();
-
-	//// Spawn client process
-
-	//while (sd.pipe.is_connected()) {
-	//	// Commit 2a6040df7922a077dc9aa16216e4085796637a42:
-	//	// - Windows: You need a thread that can enter an alertable state or is permanently in that state.
-	//	//
-	//	shared::logger::log("Sent %lld, received %lld messages.", sd.count_send, sd.count_recv);
-
-	//	os::waitable *waits[]    = {((sd.read_op && sd.read_op->is_valid()) ? nullptr : &sd.sin), sd.read_op.get(),
- //                                sd.write_op.get()};
-	//	size_t        wait_index = std::numeric_limits<size_t>::max();
-	//	for (size_t idx = 0; idx < 3; idx++) {
-	//		if (waits[idx] != nullptr && waits[idx]->wait(std::chrono::milliseconds(0)) == os::error::Success) {
-	//			wait_index = idx;
-	//			break;
-	//		}
-	//	}
-	//	if (wait_index == std::numeric_limits<size_t>::max()) {
-	//		os::error code = os::waitable::wait_any(waits, 3, wait_index, std::chrono::milliseconds(1000));
-	//		if (code == os::error::Disconnected) {
-	//			break;
-	//		} else if (code == os::error::Error) {
-	//			throw std::exception("unexpected error");
-	//		}
-	//	}
-	//	if (wait_index == std::numeric_limits<size_t>::max()) {
-	//		shared::logger::log("Timed out");
-	//		continue;
-	//	}
-
-	//	// New message to read.
-	//	if (wait_index == 1) {
-	//		if (!sd.read_op || !sd.read_op->is_valid()) {
-	//			size_t size;
-	//			if (sd.pipe.available(size) != os::error::Success) {
-	//				throw std::exception("unexpected error");
-	//			}
-	//			if (size > 0) {
-	//				sd.read_buf.resize(size);
-	//				os::error err = sd.pipe.read(sd.read_buf.data(), sd.read_buf.size(), sd.read_op,
-	//											 std::bind(&server_data::server_read_cb, &sd, _1, _2));
-	//				if (err != os::error::Success) {
-	//					throw std::exception("unexpected error");
-	//				}
-	//			} else {
-	//				// Attempted to read before Kernel update.
-	//				sd.sin.signal();
-	//			}
-	//		}
-	//	}
-
-	//	Sleep(0);
-	//}
-
+	shared::logger::log("Done.");
 	return 0;
 }
 
@@ -338,6 +284,8 @@ struct client_data {
 	size_t count_send     = 0;
 	size_t count_recv     = 0;
 
+	size_t pending_msg = 0;
+
 	shared::time::measure_timer go_timer;
 	shared::time::measure_timer loop_timer;
 	shared::time::measure_timer msg_time;
@@ -348,6 +296,23 @@ struct client_data {
 	client_data()
 		: pipe(os::open_only, "Data", os::windows::pipe_read_mode::Message), sin(os::open_only, SERVER_CLIENT_CHANNEL),
 		  sout(os::open_only, CLIENT_SERVER_CHANNEL) {}
+
+	void write_cb(os::error err, size_t bytes) {
+		write_op->invalidate();
+
+		if (err == os::error::Success) {
+			os::error ec = sout.signal();
+			if (ec != os::error::Success) {
+				throw std::exception("Could not signal remote.");
+			}
+			count_send++;
+			//shared::logger::log("Sent message %lld of %lld.", count_send, CLIENT_MAX_MESSAGES);
+			/*if ((count_send + 1) % 100 == 0)
+				shared::logger::log("Sent %lld messages.", count_send);*/
+		} else {
+			throw std::exception("sending failed");
+		}
+	}
 
 	void send_message() {
 		if (write_op && write_op->is_valid()) {
@@ -364,6 +329,8 @@ struct client_data {
 		write_buf[0] = idx;
 		memcpy(reinterpret_cast<void *>(&write_buf[1]), messages[idx].c_str(), messages[idx].size());
 
+		msg_times.push(msg_time.track());
+
 		os::error ec =
 			pipe.write(write_buf.data(), msg_size, write_op, std::bind(&client_data::write_cb, this, _1, _2));
 		if (ec != os::error::Success) {
@@ -371,8 +338,39 @@ struct client_data {
 		}
 	}
 
+	void read_cb(os::error err, size_t bytes) {
+		read_op->invalidate();
+		msg_times.pop();
+
+		uint8_t idx = (uint8_t &)read_buf[0];
+		if (idx >= messages.size()) {
+			shared::logger::log("Index %d is out of bounds (maximum %d)", idx, messages.size() - 1);
+			throw std::exception("Message corrupted.");
+		}
+
+		size_t      msg_len = bytes - 1;
+		const char *msg     = (const char *)&read_buf[1];
+		if ((msg_len == messages[idx].size()) && (memcmp(msg, messages[idx].c_str(), msg_len) == 0)) {
+			count_recv++;
+			//shared::logger::log("Read message %lld of %lld.", count_recv, CLIENT_MAX_MESSAGES);
+			/*if ((count_recv + 1) % 100 == 0)
+					shared::logger::log("Received %lld messages.", count_recv);*/
+		} else {
+			shared::logger::log("Message does not match original message.\nRecv: %.*s\nOrig: %.*s).", msg_len, msg,
+								messages[idx].size(), messages[idx].c_str());
+			throw std::exception("Message corrupted.");
+		}
+
+		if (pending_msg > 0) {
+			read_message();
+		}
+
+		send_message();
+	}
+
 	void read_message() {
 		if (read_op && read_op->is_valid()) {
+			pending_msg++;
 			return;
 		}
 		if (count_recv >= CLIENT_MAX_MESSAGES) {
@@ -395,76 +393,112 @@ struct client_data {
 		if (ec != os::error::Success) {
 			throw std::exception("unexpected error");
 		}
+
+		if (pending_msg > 0) {
+			pending_msg--;
+		}
+	}
+
+	void wait_for_signal() {
+		os::error ec;
+
+		go_time = go_timer.track();
+
+		shared::logger::log("Waiting for sin.");
+		ec = sin.wait();
+		if (ec != os::error::Success) {
+			throw std::exception("unexpected error");
+		}
+
+		shared::logger::log("Waiting for available.");
+		size_t avail = 0;
+		while (avail == 0) {
+			ec = pipe.available(avail);
+			if (ec != os::error::Success) {
+				break;
+			}
+		}
+		if (avail == 0) {
+			throw std::exception("unexpected error");
+		}
+
+		shared::logger::log("Waiting for read.");
+		read_buf.resize(avail);
+		ec = pipe.read(read_buf.data(), avail, read_op, nullptr);
+		if (ec != os::error::Success) {
+			throw std::exception("unexpected error");
+		}
+
+		shared::logger::log("Waiting for read_op.");
+		ec = read_op->wait();
+		if (ec != os::error::Success && ec != os::error::TimedOut) { // how does an infinite wait TIME OUT?!
+			throw std::exception("unexpected error");
+		}
+
+		if (read_buf[0] == 'G' && read_buf[1] == 'O') {
+			go_time.reset();
+			is_initialized = true;
+			shared::logger::log("Signal received.");
+		} else {
+			shared::logger::log("Wrong initial message");
+			throw std::exception("failed to initialize");
+		}
+		read_op->invalidate();
 	}
 
 	void loop() {
-		size_t count = 0, recv_count = 0;
 		size_t avail = 0;
 
-		// Timers
+		// Wait for signal
+		wait_for_signal();
 
-		os::error ec;
-		auto      loop_time = loop_timer.track();
+		// Send first message.
+		send_message();
+
+		size_t last_recv = 0, last_send = 0;
+		auto loop_time = loop_timer.track();
 		while (pipe.is_connected()) {
-			//shared::logger::log("Sent %lld, received %lld messages.", count_send, count_recv);
-
-			if (!is_initialized) {
-				if (!read_op) {
-					ec = sin.wait(std::chrono::milliseconds(100));
-					if (ec != os::error::Success) {
-						continue;
-					}
-					go_time = go_timer.track();
-					while (avail == 0) {
-						ec = pipe.available(avail);
-						if (ec != os::error::Success) {
-							break;
-						}
-					}
-					if (avail == 0) {
-						throw std::exception("unexpected error");
-					}
-					read_buf.resize(avail);
-					ec = pipe.read(read_buf.data(), avail, read_op, std::bind(&client_data::read_cb, this, _1, _2));
-					if (ec != os::error::Success) {
-						throw std::exception("unexpected error");
-					}
-				} else {
-					os::waitable::wait(read_op.get(), std::chrono::milliseconds(100));
-				}
-			} else {
-				// Commit 2a6040df7922a077dc9aa16216e4085796637a42:
-				// - Windows: You need a thread that can enter an alertable state or is permanently in that state.
-
-				os::waitable *waits[] = {
-					((read_op && read_op->is_valid()) ? nullptr : &sin),
-					read_op.get(),
-					write_op.get(),
-				};
-				size_t wait_index = std::numeric_limits<size_t>::max();
-				for (size_t idx = 0; idx < 3; idx++) {
-					if (waits[idx] != nullptr && waits[idx]->wait(std::chrono::milliseconds(0)) == os::error::Success) {
-						wait_index = idx;
-						break;
-					}
-				}
-				if (wait_index == std::numeric_limits<size_t>::max()) {
-					os::error code = os::waitable::wait_any(waits, 3, wait_index, std::chrono::milliseconds(100));
-					if (code == os::error::Disconnected) {
-						break;
-					} else if (code == os::error::Error) {
-						throw std::exception("unexpected error");
-					}
-				}
-				if (wait_index == 1) {
-					read_message();
-				} else if (wait_index == 2) {
-					send_message();
-				}
-			}
-
+			// Commit 2a6040df7922a077dc9aa16216e4085796637a42:
+			// - Windows: You need a thread that can enter an alertable state or is permanently in that state.
 			if (count_recv == CLIENT_MAX_MESSAGES)
 				break;
+
+			if ((count_recv + count_send) - (last_recv + last_send) > 100) {
+				shared::logger::log("Sent %lld and received %lld.", count_send, count_recv);
+				last_recv = count_recv;
+				last_send = count_send;
+			}
+			
+			os::waitable *waits[] = {
+				&sin,
+				read_op.get(),
+				write_op.get(),
+			};
+			size_t wait_index = std::numeric_limits<size_t>::max();
+			for (size_t idx = 0; idx < 3; idx++) {
+				if (waits[idx] != nullptr && waits[idx]->wait(std::chrono::milliseconds(0)) == os::error::Success) {
+					wait_index = idx;
+					break;
+				}
+			}
+			if (wait_index == std::numeric_limits<size_t>::max()) {
+				os::error code = os::waitable::wait_any(waits, 3, wait_index, std::chrono::milliseconds(100));
+				if (code == os::error::Disconnected) {
+					break;
+				} else if (code == os::error::Error) {
+					throw std::exception("unexpected error");
+				}
+			}
+			if (wait_index == std::numeric_limits<size_t>::max()) {
+				continue;
+			}
+			if (waits[wait_index] == &sin) {
+				read_message();
+			} else if (write_op && (waits[wait_index] == write_op.get())) {
+				//send_message();
+			}
+
+			Sleep(0);
 		}
 		loop_time.reset();
 
@@ -485,70 +519,6 @@ struct client_data {
 		shared::logger::log("99.0%% Time: %16llu ns", msg_time.percentile(0.99).count());
 		shared::logger::log("99.9%% Time: %16llu ns", msg_time.percentile(0.999).count());
 	}
-
-	void read_cb(os::error err, size_t bytes) {
-		read_op->invalidate();
-
-		if (!is_initialized) {
-			if (err == os::error::Success) {
-				if (read_buf[0] == 'G' && read_buf[1] == 'O') {
-					go_time.reset();
-					is_initialized = true;
-					shared::logger::log("Signal received.");
-
-					send_message();
-				} else {
-					shared::logger::log("Wrong initial message");
-					throw std::exception("failed to initialize");
-				}
-			} else {
-				throw std::exception("failed to initialize");
-			}
-		} else {
-			msg_times.pop();
-
-			uint8_t idx = (uint8_t &)read_buf[0];
-			if (idx >= messages.size()) {
-				shared::logger::log("Index %d is out of bounds (maximum %d)", idx, messages.size() - 1);
-				throw std::exception("Message corrupted.");
-			}
-
-			size_t      msg_len = bytes - 1;
-			const char *msg     = (const char *)&read_buf[1];
-			if ((msg_len == messages[idx].size()) && (memcmp(msg, messages[idx].c_str(), msg_len) == 0)) {
-				count_recv++;
-				/*if ((count_recv + 1) % 100 == 0)
-					shared::logger::log("Received %lld messages.", count_recv);*/
-			} else {
-				shared::logger::log("Message does not match original message.\nRecv: %.*s\nOrig: %.*s).", msg_len, msg,
-									messages[idx].size(), messages[idx].c_str());
-				throw std::exception("Message corrupted.");
-			}
-		}
-
-		size_t tavail = 0;
-		pipe.total_available(tavail);
-		if (tavail) {
-			read_message();
-		}
-	}
-
-	void write_cb(os::error err, size_t bytes) {
-		write_op->invalidate();
-
-		if (err == os::error::Success) {
-			os::error ec = sout.signal();
-			if (ec != os::error::Success) {
-				throw std::exception("Could not signal remote.");
-			}
-			count_send++;
-			/*if ((count_send + 1) % 100 == 0)
-				shared::logger::log("Sent %lld messages.", count_send);*/
-			msg_times.push(msg_time.track());
-		} else {
-			throw std::exception("sending failed");
-		}
-	}
 };
 
 int client(int argc, const char *argv[]) {
@@ -560,7 +530,6 @@ int client(int argc, const char *argv[]) {
 }
 
 int main(int argc, const char *argv[]) {
-	//try {
 	shared::logger::is_timestamp_relative_to_start(true);
 	shared::logger::to_stdout(true);
 	shared::logger::to_stderr(false);
@@ -577,8 +546,4 @@ int main(int argc, const char *argv[]) {
 	std::cin.get();
 
 	return code;
-	//} catch (std::exception e) {
-	//	shared::logger::log("%s", e.what());
-	//	throw e;
-	//}
 }

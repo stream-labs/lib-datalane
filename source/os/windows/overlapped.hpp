@@ -41,6 +41,8 @@ namespace os {
 			void signal();
 
 			virtual void *get_waitable();
+						
+			static void completion_routine(DWORD dwErrorCode, DWORD dwBytesTransmitted, OVERLAPPED *ov);
 		};
 	} // namespace windows
 } // namespace os
