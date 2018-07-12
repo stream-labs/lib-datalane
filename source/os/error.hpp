@@ -24,6 +24,9 @@
 
 namespace os {
 	enum class error {
+		// Unknown
+		Unknown = -1,
+
 		// Everything went right
 		Ok      = 0,
 		Success = Ok,
@@ -55,6 +58,11 @@ namespace os {
 		// Connected (opposite of Disconnected, if you didn't know)
 		Connected,
 
+		// Pending IO or similar.
+		Pending,
+
+		// Buffer Overflow
+		BufferOverflow,
 	};
 }
 
