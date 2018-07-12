@@ -64,10 +64,10 @@ namespace os {
 
 			os::error total_available(size_t &avail);
 
-			[[deprecated("Use read(char*, size_t, std::shared_ptr<os::async_op>&, os::async_op_cb_t).")]]
+			[[deprecated("This method is deprecated, use read(char*, size_t, std::shared_ptr<os::async_op>&, os::async_op_cb_t) instead.")]]
 			os::error read(std::unique_ptr<os::windows::async_request> &request, char *buffer, size_t buffer_length);
 			
-			[[deprecated("Use write(const char*, size_t, std::shared_ptr<os::async_op>&, os::async_op_cb_t).")]]
+			[[deprecated("This method is deprecated, use write(const char*, size_t, std::shared_ptr<os::async_op>&, os::async_op_cb_t) instead.")]]
 			os::error write(std::unique_ptr<os::windows::async_request> &request, const char *buffer,
 							size_t buffer_length);
 
@@ -81,7 +81,10 @@ namespace os {
 			bool is_connected();
 
 			public: // created only
+			[[deprecated("This method is deprecated, use accept(std::shared_ptr<os::async_op>&, os::async_op_cb_t) instead.")]]
 			os::error accept(std::unique_ptr<os::windows::async_request> &request);
+
+			os::error accept(std::shared_ptr<os::async_op> &op, os::async_op_cb_t cb);
 		};
 	} // namespace windows
 } // namespace os

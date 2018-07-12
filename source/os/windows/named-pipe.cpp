@@ -112,13 +112,13 @@ inline void open_logic(HANDLE &handle, std::wstring name, os::windows::pipe_read
 		throw std::runtime_error(msg.data());
 	}
 
-	DWORD pipe_read_mode = 0;
+	DWORD pipe_read_mode = PIPE_WAIT;
 	switch (mode) {
 	case os::windows::pipe_read_mode::Message:
-		pipe_read_mode = PIPE_READMODE_MESSAGE;
+		pipe_read_mode |= PIPE_READMODE_MESSAGE;
 		break;
 	default:
-		pipe_read_mode = PIPE_READMODE_BYTE;
+		pipe_read_mode |= PIPE_READMODE_BYTE;
 		break;
 	}
 
@@ -255,52 +255,58 @@ os::error os::windows::named_pipe::write(std::unique_ptr<os::windows::async_requ
 
 os::error os::windows::named_pipe::read(char *buffer, size_t buffer_length, std::shared_ptr<os::async_op> &op,
 										os::async_op_cb_t cb) {
+	os::error ec;
+
 	std::shared_ptr<os::windows::async_request> ar = std::static_pointer_cast<os::windows::async_request>(op);
 	if (!ar) {
 		ar = std::make_shared<os::windows::async_request>();
 	}
+	op = std::static_pointer_cast<os::async_op>(ar);
 	ar->set_callback(cb);
 	ar->set_handle(handle);
 
 	SetLastError(ERROR_SUCCESS);
-	if (!ReadFileEx(handle, buffer, DWORD(buffer_length), ar->get_overlapped_pointer(),
-					os::windows::async_request::completion_routine)
-		|| (GetLastError() != ERROR_SUCCESS)) {
-		os::error error = utility::translate_error(GetLastError());
-		if (error != os::error::Success) {
-			ar->cancel();
-		}
-		return error;
+	BOOL  suc   = ReadFileEx(handle, buffer, DWORD(buffer_length), ar->get_overlapped_pointer(),
+                          os::windows::async_request::completion_routine);
+	DWORD error = GetLastError();
+	ec          = utility::translate_error(error);
+
+	if (suc == 0) {
+		ar->call_callback(ec, buffer_length);
+		ar->cancel();
+		return ec;
 	}
 
 	ar->set_valid(true);
-	op = std::static_pointer_cast<os::async_op>(ar);
-	return os::error::Success;
+	return ec;
 }
 
 os::error os::windows::named_pipe::write(const char *buffer, size_t buffer_length, std::shared_ptr<os::async_op> &op,
 										 os::async_op_cb_t cb) {
+	os::error ec;
+
 	std::shared_ptr<os::windows::async_request> ar = std::static_pointer_cast<os::windows::async_request>(op);
 	if (!ar) {
 		ar = std::make_shared<os::windows::async_request>();
 	}
+	op = std::static_pointer_cast<os::async_op>(ar);
 	ar->set_callback(cb);
 	ar->set_handle(handle);
 
 	SetLastError(ERROR_SUCCESS);
-	if (!WriteFileEx(handle, buffer, DWORD(buffer_length), ar->get_overlapped_pointer(),
-					 os::windows::async_request::completion_routine)
-		|| (GetLastError() != ERROR_SUCCESS)) {
-		os::error error = utility::translate_error(GetLastError());
-		if (error != os::error::Success) {
-			ar->cancel();
-		}
-		return error;
+	BOOL  suc   = WriteFileEx(handle, buffer, DWORD(buffer_length), ar->get_overlapped_pointer(),
+                           os::windows::async_request::completion_routine);
+	DWORD error = GetLastError();
+	ec          = utility::translate_error(error);
+
+	if (suc == 0) {
+		ar->call_callback(ec, buffer_length);
+		ar->cancel();
+		return ec;
 	}
 
 	ar->set_valid(true);
-	op = std::static_pointer_cast<os::async_op>(ar);
-	return os::error::Success;
+	return ec;
 }
 
 bool os::windows::named_pipe::is_created() {
@@ -313,29 +319,41 @@ bool os::windows::named_pipe::is_connected() {
 }
 
 os::error os::windows::named_pipe::accept(std::unique_ptr<os::windows::async_request> &request) {
+	std::shared_ptr<os::windows::async_request> ars = std::move(request);
+	os::error                                   ec  = accept(std::static_pointer_cast<os::async_op>(ars), nullptr);
+	request.reset(ars.get());
+	return ec;
+}
+
+os::error os::windows::named_pipe::accept(std::shared_ptr<os::async_op> &op, os::async_op_cb_t cb) {
+	os::error ec;
+
 	if (!is_created()) {
 		return os::error::Error;
 	}
 
-	if (!request) {
-		request = std::make_unique<os::windows::async_request>();
+	std::shared_ptr<os::windows::async_request> ar = std::static_pointer_cast<os::windows::async_request>(op);
+	if (!ar) {
+		ar = std::make_shared<os::windows::async_request>();
 	}
-	request->set_handle(handle);
+	op = std::static_pointer_cast<os::async_op>(ar);
+	ar->set_callback(cb);
+	ar->set_handle(handle);
 
 	SetLastError(ERROR_SUCCESS);
-	if (!ConnectNamedPipe(handle, request->get_overlapped_pointer()) || (GetLastError() != ERROR_SUCCESS)) {
-		DWORD error = GetLastError();
-		if (error == ERROR_MORE_DATA) {
-			return os::error::MoreData;
-		} else if (error == ERROR_BROKEN_PIPE) {
-			return os::error::Disconnected;
-		} else if (error == ERROR_PIPE_CONNECTED) {
-			return os::error::Connected;
-		} else if (error != ERROR_IO_PENDING) {
-			return os::error::Error;
-		}
+	BOOL suc = ConnectNamedPipe(handle, ar->get_overlapped_pointer());
+	ec       = utility::translate_error(GetLastError());
+
+	if (ec != os::error::Pending && ec != os::error::Connected) {
+		ar->call_callback(ec, 0);
+		ar->cancel();
+		return ec;
 	}
 
-	request->set_valid(true);
-	return os::error::Success;
+	ar->set_valid(true);
+	if (ec == os::error::Connected) {
+		ar->call_callback(ec, 0);
+	}
+
+	return ec;
 }
