@@ -23,7 +23,7 @@ os::error os::windows::utility::translate_error(DWORD error_code) {
 		return os::error::Success;
 	case ERROR_IO_PENDING:
 		// !FIXME! Should this have its own error code?
-		return os::error::Success;
+		return os::error::Pending;
 	case ERROR_BROKEN_PIPE:
 		return os::error::Disconnected;
 	case ERROR_MORE_DATA:
