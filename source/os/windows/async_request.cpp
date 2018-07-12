@@ -19,30 +19,22 @@
 #include "utility.hpp"
 
 void os::windows::async_request::set_handle(HANDLE handle) {
-	this->handle = handle;
-	this->valid  = false;
+	this->handle          = handle;
+	this->valid           = false;
+	this->callback_called = false;
 }
 
 void os::windows::async_request::set_valid(bool valid) {
-	this->valid = valid;
+	this->valid           = valid;
+	this->callback_called = false;
 }
 
 void os::windows::async_request::completion_routine(DWORD dwErrorCode, DWORD dwBytesTransmitted, OVERLAPPED *ov) {
 	os::windows::overlapped *ovp = os::windows::overlapped::get_pointer_from_overlapped(ov);
-
 	if (!ovp) {
 		return;
 	}
 	ovp->signal();
-
-	os::windows::async_request *ar = static_cast<os::windows::async_request *>(ovp);
-	if (!ar) {
-		return;
-	}
-
-	if (ar->callback) {
-		ar->callback(os::windows::utility::translate_error(dwErrorCode), dwBytesTransmitted);
-	}
 }
 
 void *os::windows::async_request::get_waitable() {
@@ -60,7 +52,8 @@ bool os::windows::async_request::is_valid() {
 }
 
 void os::windows::async_request::invalidate() {
-	valid = false;
+	valid           = false;
+	callback_called = true;
 }
 
 bool os::windows::async_request::is_complete() {
@@ -94,4 +87,23 @@ bool os::windows::async_request::cancel() {
 		return CancelIoEx(handle, this->get_overlapped_pointer());
 	}
 	return true;
+}
+
+void os::windows::async_request::call_callback() {
+	DWORD       bytes = 0;
+	OVERLAPPED *ov    = get_overlapped_pointer();
+	os::error   error = os::error::Success;
+
+	SetLastError(ERROR_SUCCESS);
+	GetOverlappedResultEx(handle, ov, &bytes, FALSE, TRUE);
+	error = os::windows::utility::translate_error(GetLastError());
+
+	call_callback(error, (size_t)bytes);
+}
+
+void os::windows::async_request::call_callback(os::error ec, size_t length) {
+	if (callback && !callback_called) {
+		callback_called = true;
+		callback(ec, length);
+	}
 }

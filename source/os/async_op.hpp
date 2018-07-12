@@ -24,12 +24,13 @@
 #include "waitable.hpp"
 
 namespace os {
-	typedef std::function<void(os::error success, size_t length)> async_op_cb_t;
+	typedef std::function<void(os::error code, size_t length)> async_op_cb_t;
 
 	class async_op : public os::waitable {
 		protected:
 		bool          valid = false;
 		async_op_cb_t callback;
+		bool          callback_called = false;
 
 		virtual void *get_waitable() override = 0;
 
@@ -49,6 +50,10 @@ namespace os {
 		virtual bool cancel() = 0;
 
 		virtual void set_callback(async_op_cb_t u_callback);
+
+		virtual void call_callback() = 0;
+
+		virtual void call_callback(os::error ec, size_t length) = 0;
 	};
 } // namespace os
 

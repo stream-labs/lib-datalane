@@ -38,7 +38,7 @@ namespace os {
 			void set_valid(bool valid);
 
 			static void completion_routine(DWORD dwErrorCode, DWORD dwBytesTransmitted, OVERLAPPED *ov);
-			
+
 			public:
 			~async_request();
 
@@ -52,11 +52,16 @@ namespace os {
 
 			virtual bool cancel() override;
 
+			virtual void call_callback() override;
+
+			virtual void call_callback(os::error ec, size_t length) override;
+
 			// os::waitable
 			virtual void *get_waitable() override;
 
 			public:
-			friend class named_pipe;
+			friend class os::windows::named_pipe;
+			friend class os::waitable;
 		};
 	} // namespace windows
 } // namespace os
