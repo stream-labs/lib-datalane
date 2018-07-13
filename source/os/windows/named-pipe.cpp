@@ -65,7 +65,7 @@ inline std::string make_windows_compatible(std::string &name) {
 }
 
 inline void create_logic(HANDLE &handle, std::wstring name, size_t max_instances, os::windows::pipe_type type,
-						 os::windows::pipe_read_mode mode, bool is_unique) {
+						 os::windows::pipe_read_mode mode, bool is_unique, SECURITY_ATTRIBUTES& attr) {
 	DWORD pipe_open_mode = PIPE_ACCESS_DUPLEX | FILE_FLAG_WRITE_THROUGH | FILE_FLAG_OVERLAPPED;
 	DWORD pipe_type      = 0;
 	DWORD pipe_read_mode = 0;
@@ -94,8 +94,8 @@ inline void create_logic(HANDLE &handle, std::wstring name, size_t max_instances
 
 	SetLastError(ERROR_SUCCESS);
 	handle = CreateNamedPipeW(name.c_str(), pipe_open_mode, pipe_type | pipe_read_mode | PIPE_WAIT,
-							  DWORD(max_instances), DEFAULT_BUFFER_SIZE, DEFAULT_BUFFER_SIZE, DEFAULT_WAIT_TIME, NULL);
-	if (!handle || (GetLastError() != ERROR_SUCCESS)) {
+							  DWORD(max_instances), DEFAULT_BUFFER_SIZE, DEFAULT_BUFFER_SIZE, DEFAULT_WAIT_TIME, &attr);
+	if (handle == INVALID_HANDLE_VALUE) {
 		std::vector<char> msg(2048);
 		sprintf_s(msg.data(), msg.size(), "Creating Named Pipe failed with error code %lX.\0", GetLastError());
 		throw std::runtime_error(msg.data());
@@ -137,8 +137,9 @@ os::windows::named_pipe::named_pipe(os::create_only_t, std::string name,
 									pipe_read_mode mode /*= pipe_read_mode::Message*/, bool is_unique /*= false*/) {
 	validate_create_param(name, max_instances);
 
+	memset(&m_securityAttributes, 0, sizeof(m_securityAttributes));
 	std::wstring wide_name = make_wide_string(make_windows_compatible(name + '\0'));
-	create_logic(handle, wide_name, max_instances, type, mode, is_unique);
+	create_logic(handle, wide_name, max_instances, type, mode, is_unique, m_securityAttributes);
 	created = true;
 }
 
@@ -148,9 +149,10 @@ os::windows::named_pipe::named_pipe(os::create_or_open_t, std::string name,
 									pipe_read_mode mode /*= pipe_read_mode::Message*/, bool is_unique /*= false*/) {
 	validate_create_param(name, max_instances);
 
+	memset(&m_securityAttributes, 0, sizeof(m_securityAttributes));
 	std::wstring wide_name = make_wide_string(make_windows_compatible(name + '\0'));
 	try {
-		create_logic(handle, wide_name, max_instances, type, mode, is_unique);
+		create_logic(handle, wide_name, max_instances, type, mode, is_unique, m_securityAttributes);
 		created = true;
 	} catch (...) {
 		open_logic(handle, wide_name, mode);

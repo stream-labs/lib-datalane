@@ -48,7 +48,8 @@ namespace os {
 
 		class named_pipe {
 			HANDLE handle;
-			bool   created = false;
+			bool                created = false;
+			SECURITY_ATTRIBUTES m_securityAttributes;
 
 			public:
 			named_pipe(os::create_only_t, std::string name, size_t max_instances = PIPE_UNLIMITED_INSTANCES,
