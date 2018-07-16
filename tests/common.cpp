@@ -326,6 +326,16 @@ std::unique_ptr<shared::time::measure_timer::instance> shared::time::measure_tim
 	return std::make_unique<instance>(this);
 }
 
+void shared::time::measure_timer::manual_track(std::chrono::nanoseconds time) {
+	auto el = timings.find(time);
+	if (el != timings.end()) {
+		el->second++;
+	} else {
+		timings.insert(std::make_pair(time, 1));
+	}
+	calls++;
+}
+
 void shared::time::measure_timer::track(std::chrono::nanoseconds dur) {
 	auto el = timings.find(dur);
 	if (el != timings.end()) {

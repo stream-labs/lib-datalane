@@ -91,6 +91,8 @@ namespace shared {
 
 			std::unique_ptr<instance> track();
 
+			void manual_track(std::chrono::nanoseconds time);
+
 			uint64_t count();
 
 			std::chrono::nanoseconds total();
