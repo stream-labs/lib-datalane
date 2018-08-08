@@ -1,3 +1,5 @@
+ADD_SUBDIRECTORY(direct-read-write)
+ADD_SUBDIRECTORY(direct-read-write-mt)
 ADD_SUBDIRECTORY(named-pipe)
 ADD_SUBDIRECTORY(named-pipe-process)
 ADD_SUBDIRECTORY(named-pipe-process-cb)
