@@ -36,6 +36,8 @@ namespace datalane {
 		virtual bool good() = 0;
 		virtual bool bad();
 
+		virtual bool is_server() = 0;
+
 		public: // listen() only
 		virtual bool  pending()                                         = 0;
 		virtual error accept(std::shared_ptr<datalane::socket> &socket) = 0;
