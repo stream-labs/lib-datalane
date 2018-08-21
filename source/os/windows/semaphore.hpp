@@ -24,23 +24,23 @@
 #include <inttypes.h>
 #include <windows.h>
 #include "../tags.hpp"
-#include "../waitable.hpp"
+#include "../semaphore.hpp"
 
 namespace os {
 	namespace windows {
-		class semaphore : public os::waitable {
+		class semaphore : public os::semaphore {
 			HANDLE handle;
 
 			public:
-			semaphore(int32_t initial_count = 0, int32_t maximum_count = INT32_MAX);
+			semaphore(int32_t initial_count = 0, int32_t maximum_count = std::numeric_limits<int32_t>::max());
 			semaphore(os::create_only_t, std::string name, int32_t initial_count = 0,
-					  int32_t maximum_count = INT32_MAX);
+					  int32_t maximum_count = std::numeric_limits<int32_t>::max());
 			semaphore(os::create_or_open_t, std::string name, int32_t initial_count = 0,
-					  int32_t maximum_count = INT32_MAX);
+					  int32_t maximum_count = std::numeric_limits<int32_t>::max());
 			semaphore(os::open_only_t, std::string name);
-			~semaphore();
+			virtual ~semaphore();
 
-			os::error signal(uint32_t count = 1);
+			virtual os::error signal(uint32_t count = 1) override;
 
 			// os::waitable
 			protected:

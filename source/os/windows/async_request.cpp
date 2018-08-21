@@ -17,6 +17,7 @@
 
 #include "async_request.hpp"
 #include "utility.hpp"
+#include <versionhelpers.h>
 
 typedef void(WINAPI *AGRS)(HANDLE, LPOVERLAPPED, LPDWORD, DWORD, BOOL);
 

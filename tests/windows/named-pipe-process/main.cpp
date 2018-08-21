@@ -15,11 +15,11 @@
 ** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#include <string>
+#include <thread>
 #include "../../../source/os/windows/named-pipe.hpp"
 #include "../../../source/os/windows/semaphore.hpp"
 #include "../../common.hpp"
-#include <thread>
-#include <string>
 
 #define SERVER_CLIENT_CHANNEL "DataSend"
 #define CLIENT_SERVER_CHANNEL "DataRecv"
@@ -39,41 +39,59 @@ std::vector<std::string> messages = {
 	"0x08008135",
 	"Computer said no.",
 	"Ain't no data where we are going, cause we don't need no data.",
-	"The end of the world is simply determined by how good the programming on the simulation is. And the simulation was done by the lowest bidder.",
+	"The end of the world is simply determined by how good the programming on the simulation is. And the simulation "
+	"was done by the lowest bidder.",
 	"0xDeadBeef",
 	"Virtual Reality is great, full immersion is better.",
-	"Loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong Spaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaam"
-};
+	"Looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
+	"oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
+	"oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
+	"ooooooooooooooooooooooooooooooooooooooooooooong "
+	"Spaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaam"};
 
-int server(int argc, const char* argv[]) {
-	os::windows::named_pipe pipe = os::windows::named_pipe(os::create_only, "Data", 255, os::windows::pipe_type::Message, os::windows::pipe_read_mode::Message, true);
-	os::windows::semaphore sin = os::windows::semaphore(os::create_only, CLIENT_SERVER_CHANNEL);
+int server(int argc, const char *argv[]) {
+	os::windows::named_pipe pipe = os::windows::named_pipe(
+		os::create_only, "Data", 255, os::windows::pipe_type::Message, os::windows::pipe_read_mode::Message, true);
+	os::windows::semaphore sin  = os::windows::semaphore(os::create_only, CLIENT_SERVER_CHANNEL);
 	os::windows::semaphore sout = os::windows::semaphore(os::create_only, SERVER_CLIENT_CHANNEL);
 
 	std::unique_ptr<os::windows::async_request> read_request, write_request, accept_request;
-	std::vector<char> read_buffer, write_buffer;
+	std::vector<char>                           read_buffer, write_buffer;
 	read_buffer.reserve(65535);
 	write_buffer.reserve(65535);
 
 	shared::logger::log("Server initialized.");
 
 	// Spawn client process
-	shared::os::process client(std::string(argv[0]), std::string(argv[0]) + " client", shared::os::get_working_directory());
+	shared::os::process client(std::string(argv[0]), std::string(argv[0]) + " client",
+							   shared::os::get_working_directory());
 	shared::logger::log("Client spawned.");
 
-	switch (pipe.accept(accept_request)) {
-		default:
-			throw std::exception("unexpected error");
+	bool breakout = false;
+	while (!breakout) {
+		os::error ec = pipe.accept(accept_request);
+		switch (ec) {
 		case os::error::Connected:
+			breakout = true;
+			break;
+		case os::error::Pending:
 			break;
 		case os::error::Success:
 			if (accept_request->wait(std::chrono::milliseconds(5000)) == os::error::TimedOut) {
 				throw std::exception("timed out waiting for client");
 			}
+		default:
+			throw std::exception("unexpected error");
+		}
 	}
 
 	write_buffer.resize(2);
-	write_buffer[0] = 'G'; write_buffer[1] = 'O';
+	write_buffer[0] = 'G';
+	write_buffer[1] = 'O';
 	if (pipe.write(write_request, write_buffer.data(), write_buffer.size()) != os::error::Success) {
 		throw std::exception("Failed to write to pipe.");
 	}
@@ -90,7 +108,7 @@ int server(int argc, const char* argv[]) {
 	shared::logger::log("Client signalled.");
 	write_request->invalidate();
 
-	std::vector<os::waitable*> waits;
+	std::vector<os::waitable *> waits;
 	waits.reserve(4);
 	while (pipe.is_connected()) {
 		waits.clear();
@@ -156,7 +174,7 @@ int server(int argc, const char* argv[]) {
 			}
 
 			if (waits.size() > 1) {
-				std::vector<os::waitable*> new_waits(waits.size() - 1);
+				std::vector<os::waitable *> new_waits(waits.size() - 1);
 				for (size_t idx = 0, eidx = waits.size(), tidx = 0; idx < eidx; idx++) {
 					if (idx == signalled_index)
 						continue;
@@ -173,14 +191,14 @@ int server(int argc, const char* argv[]) {
 	return 0;
 }
 
-int client(int argc, const char* argv[]) {
-	os::windows::named_pipe pipe = os::windows::named_pipe(os::open_only, "Data");
-	os::windows::semaphore sin = os::windows::semaphore(os::open_only, SERVER_CLIENT_CHANNEL);
-	os::windows::semaphore sout = os::windows::semaphore(os::open_only, CLIENT_SERVER_CHANNEL);
+int client(int argc, const char *argv[]) {
+	os::windows::named_pipe                     pipe = os::windows::named_pipe(os::open_only, "Data");
+	os::windows::semaphore                      sin  = os::windows::semaphore(os::open_only, SERVER_CLIENT_CHANNEL);
+	os::windows::semaphore                      sout = os::windows::semaphore(os::open_only, CLIENT_SERVER_CHANNEL);
 	std::unique_ptr<os::windows::async_request> read_request, write_request;
-	std::vector<char> read_buffer, write_buffer;
-	size_t count = 0, recv_count = 0;
-	std::vector<os::waitable*> waits;
+	std::vector<char>                           read_buffer, write_buffer;
+	size_t                                      count = 0, recv_count = 0;
+	std::vector<os::waitable *>                 waits;
 
 	read_buffer.reserve(65535);
 	write_buffer.reserve(65535);
@@ -209,7 +227,8 @@ int client(int argc, const char* argv[]) {
 				}
 			}
 		} else {
-			if (read_request->is_complete() || (read_request->wait(std::chrono::milliseconds(100)) == os::error::Success)) {
+			if (read_request->is_complete()
+				|| (read_request->wait(std::chrono::milliseconds(100)) == os::error::Success)) {
 				if (read_buffer[0] == 'G' && read_buffer[1] == 'O') {
 					read_request->invalidate();
 					break;
@@ -223,7 +242,8 @@ int client(int argc, const char* argv[]) {
 	got = nullptr;
 
 	auto loopt = loop_timer.track();
-	auto msgt = msg_time.track(); msgt->cancel();
+	auto msgt  = msg_time.track();
+	msgt->cancel();
 	while (pipe.is_connected()) {
 		if (count < CLIENT_MAX_MESSAGES) {
 			if (!write_request || !write_request->is_valid()) {
@@ -298,7 +318,7 @@ int client(int argc, const char* argv[]) {
 			}
 
 			if (waits.size() > 1) {
-				std::vector<os::waitable*> new_waits(waits.size() - 1);
+				std::vector<os::waitable *> new_waits(waits.size() - 1);
 				for (size_t idx = 0, eidx = waits.size(), tidx = 0; idx < eidx; idx++) {
 					if (idx == signalled_index)
 						continue;
@@ -340,7 +360,7 @@ int client(int argc, const char* argv[]) {
 	return 0;
 }
 
-int main(int argc, const char* argv[]) {
+int main(int argc, const char *argv[]) {
 	//try {
 	shared::logger::is_timestamp_relative_to_start(true);
 	shared::logger::to_stdout(true);

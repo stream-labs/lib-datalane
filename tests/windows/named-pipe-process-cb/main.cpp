@@ -86,16 +86,22 @@ struct server_data {
 		  sin(os::create_only, CLIENT_SERVER_CHANNEL), sout(os::create_only, SERVER_CLIENT_CHANNEL) {}
 
 	void accept_client() {
-		switch (pipe.accept(accept_request)) {
-		default:
-			throw std::exception("unexpected error");
-		case os::error::Connected:
-			break;
-		case os::error::Success:
-			if (os::waitable::wait(accept_request.get(), std::chrono::milliseconds(5000)) == os::error::TimedOut) {
-				throw std::exception("timed out waiting for client");
+		os::error ec = os::error::Unknown;
+		while (ec != os::error::Connected) {
+			ec = pipe.accept(accept_request);
+			switch (ec) {
+			case os::error::Connected:
+				break;
+			case os::error::Pending:
+				break;
+			case os::error::Success:
+				if (os::waitable::wait(accept_request.get(), std::chrono::milliseconds(5000)) == os::error::TimedOut) {
+					throw std::exception("timed out waiting for client");
+				}
+			default:
+				throw std::exception("unexpected error");
 			}
-		}
+		}		
 	}
 
 	void signal_client_start_cb(os::error err, size_t bytes) {
