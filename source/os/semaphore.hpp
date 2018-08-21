@@ -24,8 +24,7 @@
 
 namespace os {
 	class semaphore : public os::waitable {
-		public:		
-		virtual ~semaphore()                         = 0;
+		public:
 		virtual os::error signal(uint32_t count = 1) = 0;
 
 		public:
