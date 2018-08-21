@@ -18,6 +18,11 @@
 #include "async_request.hpp"
 #include "utility.hpp"
 
+typedef void(WINAPI *AGRS)(HANDLE, LPOVERLAPPED, LPDWORD, DWORD, BOOL);
+
+HINSTANCE kernel = LoadLibrary("kernel32.dll");
+AGRS      getOverlappedResultEx;
+
 void os::windows::async_request::set_handle(HANDLE handle) {
 	this->handle          = handle;
 	this->valid           = false;
@@ -95,7 +100,16 @@ void os::windows::async_request::call_callback() {
 	os::error   error = os::error::Success;
 
 	SetLastError(ERROR_SUCCESS);
-	GetOverlappedResultEx(handle, ov, &bytes, FALSE, TRUE);
+
+	if (kernel) {
+		getOverlappedResultEx = (AGRS)GetProcAddress(kernel, "GetOverlappedResultEx");
+		if (getOverlappedResultEx) {
+			getOverlappedResultEx(handle, ov, &bytes, FALSE, TRUE);
+		} else {
+			GetOverlappedResult(handle, ov, &bytes, FALSE);
+		}
+	}
+
 	error = os::windows::utility::translate_error(GetLastError());
 
 	call_callback(error, (size_t)bytes);
