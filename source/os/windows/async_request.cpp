@@ -17,6 +17,7 @@
 
 #include "async_request.hpp"
 #include "utility.hpp"
+#include <versionhelpers.h>
 
 void os::windows::async_request::set_handle(HANDLE handle) {
 	this->handle          = handle;
@@ -95,7 +96,11 @@ void os::windows::async_request::call_callback() {
 	os::error   error = os::error::Success;
 
 	SetLastError(ERROR_SUCCESS);
-	GetOverlappedResultEx(handle, ov, &bytes, FALSE, TRUE);
+	if (IsWindows8OrGreater()) {
+		GetOverlappedResultEx(handle, ov, &bytes, 0, TRUE);
+	} else {
+		GetOverlappedResult(handle, ov, &bytes, FALSE);
+	}
 	error = os::windows::utility::translate_error(GetLastError());
 
 	call_callback(error, (size_t)bytes);
