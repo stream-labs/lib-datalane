@@ -52,6 +52,7 @@ SET(PROJECT_SOURCE_PRIVATE
 	"${PROJECT_SOURCE_DIR}/source/os/async_op.hpp"
 	"${PROJECT_SOURCE_DIR}/source/os/async_op.cpp"
 	"${PROJECT_SOURCE_DIR}/source/os/error.hpp"
+	"${PROJECT_SOURCE_DIR}/source/os/semaphore.hpp"
 	"${PROJECT_SOURCE_DIR}/source/os/tags.hpp"
 	"${PROJECT_SOURCE_DIR}/source/os/waitable.hpp"
 )

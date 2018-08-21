@@ -128,3 +128,25 @@ os::error os::windows::semaphore::signal(uint32_t count /*= 1*/) {
 void *os::windows::semaphore::get_waitable() {
 	return (void *)handle;
 }
+
+std::shared_ptr<os::semaphore> os::semaphore::construct(uint32_t value /*= 0*/) {
+	int32_t val = value <= uint32_t(std::numeric_limits<int32_t>::max()) ? int32_t(value) : std::numeric_limits<int32_t>::max();
+	return std::make_shared<os::windows::semaphore>(val);
+}
+
+std::shared_ptr<os::semaphore> os::semaphore::construct(os::create_only_t, std::string name, uint32_t value /*= 0*/) {
+	int32_t val =
+		value <= uint32_t(std::numeric_limits<int32_t>::max()) ? int32_t(value) : std::numeric_limits<int32_t>::max();
+	return std::make_shared<os::windows::semaphore>(os::create_only, name, val);
+}
+
+std::shared_ptr<os::semaphore> os::semaphore::construct(os::create_or_open_t, std::string name,
+														uint32_t value /*= 0*/) {
+	int32_t val =
+		value <= uint32_t(std::numeric_limits<int32_t>::max()) ? int32_t(value) : std::numeric_limits<int32_t>::max();
+	return std::make_shared<os::windows::semaphore>(os::create_or_open, name, val);
+}
+
+std::shared_ptr<os::semaphore> os::semaphore::construct(os::open_only_t, std::string name) {
+	return std::make_shared<os::windows::semaphore>(os::open_only, name);
+}
