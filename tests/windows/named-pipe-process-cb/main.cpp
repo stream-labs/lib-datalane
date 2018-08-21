@@ -87,14 +87,14 @@ struct server_data {
 
 	void accept_client() {
 		switch (pipe.accept(accept_request)) {
-		default:
-			throw std::exception("unexpected error");
 		case os::error::Connected:
 			break;
 		case os::error::Success:
 			if (os::waitable::wait(accept_request.get(), std::chrono::milliseconds(5000)) == os::error::TimedOut) {
 				throw std::exception("timed out waiting for client");
 			}
+		default:
+			throw std::exception("unexpected error");
 		}
 	}
 
