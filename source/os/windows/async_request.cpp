@@ -22,7 +22,7 @@
 typedef void(WINAPI *AGRS)(HANDLE, LPOVERLAPPED, LPDWORD, DWORD, BOOL);
 
 HINSTANCE kernel = LoadLibrary("kernel32.dll");
-AGRS      getOverlappedResultEx;
+AGRS      getOverlappedResultEx = (AGRS)GetProcAddress(kernel, "GetOverlappedResultEx");
 
 void os::windows::async_request::set_handle(HANDLE handle) {
 	this->handle          = handle;
@@ -102,13 +102,10 @@ void os::windows::async_request::call_callback() {
 
 	SetLastError(ERROR_SUCCESS);
 
-	if (kernel) {
-		getOverlappedResultEx = (AGRS)GetProcAddress(kernel, "GetOverlappedResultEx");
-		if (getOverlappedResultEx) {
-			getOverlappedResultEx(handle, ov, &bytes, FALSE, TRUE);
-		} else {
-			GetOverlappedResult(handle, ov, &bytes, FALSE);
-		}
+	if (getOverlappedResultEx) {
+		getOverlappedResultEx(handle, ov, &bytes, FALSE, TRUE);
+	} else {
+		GetOverlappedResult(handle, ov, &bytes, FALSE);
 	}
 
 	error = os::windows::utility::translate_error(GetLastError());
