@@ -315,6 +315,11 @@ bool os::windows::named_pipe::is_connected() {
 		return false;
 	}
 
+	if (!PeekNamedPipe(handle, NULL, NULL, NULL, NULL, NULL)) {
+		DWORD err = GetLastError();
+		return false;
+	}
+
 	remoteId = {sessionId, processId};
 	return true;
 }
