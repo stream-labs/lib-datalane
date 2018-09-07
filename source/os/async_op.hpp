@@ -31,6 +31,10 @@ namespace os {
 		bool          valid = false;
 		async_op_cb_t callback;
 		bool          callback_called = false;
+		struct {
+			async_op_cb_t callback;
+			bool          callback_called = false;
+		} system;
 
 		virtual void *get_waitable() override = 0;
 
@@ -50,6 +54,8 @@ namespace os {
 		virtual bool cancel() = 0;
 
 		virtual void set_callback(async_op_cb_t u_callback);
+
+		virtual void set_system_callback(async_op_cb_t u_callback);
 
 		virtual void call_callback() = 0;
 

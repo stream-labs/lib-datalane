@@ -26,3 +26,13 @@ void os::async_op::set_callback(async_op_cb_t u_callback) {
 
 	callback = u_callback;
 }
+
+void os::async_op::set_system_callback(async_op_cb_t u_callback) {
+	if (is_valid()) {
+		if (!is_complete()) {
+			throw std::runtime_error("Can't change callback for a valid but incomplete operation.");
+		}
+	}
+
+	system.callback = u_callback;
+}
