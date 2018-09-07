@@ -47,9 +47,18 @@ namespace os {
 		};
 
 		class named_pipe {
-			HANDLE handle;
+			HANDLE              handle;
 			bool                created = false;
-			SECURITY_ATTRIBUTES m_securityAttributes;
+			SECURITY_ATTRIBUTES security_attributes;
+			struct {
+				ULONG sessionId;
+				ULONG processId;
+			} remoteId;
+
+			private:
+			named_pipe();
+
+			void handle_accept_callback(os::error code, size_t length);
 
 			public:
 			named_pipe(os::create_only_t, std::string name, size_t max_instances = PIPE_UNLIMITED_INSTANCES,
@@ -65,13 +74,6 @@ namespace os {
 
 			os::error total_available(size_t &avail);
 
-			[[deprecated("This method is deprecated, use read(char*, size_t, std::shared_ptr<os::async_op>&, os::async_op_cb_t) instead.")]]
-			os::error read(std::unique_ptr<os::windows::async_request> &request, char *buffer, size_t buffer_length);
-			
-			[[deprecated("This method is deprecated, use write(const char*, size_t, std::shared_ptr<os::async_op>&, os::async_op_cb_t) instead.")]]
-			os::error write(std::unique_ptr<os::windows::async_request> &request, const char *buffer,
-							size_t buffer_length);
-
 			os::error read(char *buffer, size_t buffer_length, std::shared_ptr<os::async_op> &op, os::async_op_cb_t cb);
 
 			os::error write(const char *buffer, size_t buffer_length, std::shared_ptr<os::async_op> &op,
@@ -81,10 +83,9 @@ namespace os {
 
 			bool is_connected();
 
-			public: // created only
-			[[deprecated("This method is deprecated, use accept(std::shared_ptr<os::async_op>&, os::async_op_cb_t) instead.")]]
-			os::error accept(std::unique_ptr<os::windows::async_request> &request);
+			void set_connected(bool is_connected);
 
+			public: // created only
 			os::error accept(std::shared_ptr<os::async_op> &op, os::async_op_cb_t cb);
 		};
 	} // namespace windows

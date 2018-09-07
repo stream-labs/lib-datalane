@@ -65,7 +65,7 @@ inline std::string make_windows_compatible(std::string &name) {
 }
 
 inline void create_logic(HANDLE &handle, std::wstring name, size_t max_instances, os::windows::pipe_type type,
-						 os::windows::pipe_read_mode mode, bool is_unique, SECURITY_ATTRIBUTES& attr) {
+						 os::windows::pipe_read_mode mode, bool is_unique, SECURITY_ATTRIBUTES &attr) {
 	DWORD pipe_open_mode = PIPE_ACCESS_DUPLEX | FILE_FLAG_WRITE_THROUGH | FILE_FLAG_OVERLAPPED;
 	DWORD pipe_type      = 0;
 	DWORD pipe_read_mode = 0;
@@ -131,40 +131,52 @@ inline void open_logic(HANDLE &handle, std::wstring name, os::windows::pipe_read
 	}
 }
 
+os::windows::named_pipe::named_pipe() {
+	handle  = INVALID_HANDLE_VALUE;
+	created = false;
+	security_attributes.nLength              = sizeof(SECURITY_ATTRIBUTES);
+	security_attributes.lpSecurityDescriptor = nullptr;
+	security_attributes.bInheritHandle       = true;
+	set_connected(false);
+}
+
 os::windows::named_pipe::named_pipe(os::create_only_t, std::string name,
 									size_t         max_instances /*= PIPE_UNLIMITED_INSTANCES*/,
 									pipe_type      type /*= pipe_type::Message*/,
-									pipe_read_mode mode /*= pipe_read_mode::Message*/, bool is_unique /*= false*/) {
+									pipe_read_mode mode /*= pipe_read_mode::Message*/, bool is_unique /*= false*/)
+	: named_pipe() {
 	validate_create_param(name, max_instances);
 
-	memset(&m_securityAttributes, 0, sizeof(m_securityAttributes));
 	std::wstring wide_name = make_wide_string(make_windows_compatible(name + '\0'));
-	create_logic(handle, wide_name, max_instances, type, mode, is_unique, m_securityAttributes);
+	create_logic(handle, wide_name, max_instances, type, mode, is_unique, security_attributes);
 	created = true;
 }
 
 os::windows::named_pipe::named_pipe(os::create_or_open_t, std::string name,
 									size_t         max_instances /*= PIPE_UNLIMITED_INSTANCES*/,
 									pipe_type      type /*= pipe_type::Message*/,
-									pipe_read_mode mode /*= pipe_read_mode::Message*/, bool is_unique /*= false*/) {
+									pipe_read_mode mode /*= pipe_read_mode::Message*/, bool is_unique /*= false*/)
+	: named_pipe() {
 	validate_create_param(name, max_instances);
 
-	memset(&m_securityAttributes, 0, sizeof(m_securityAttributes));
 	std::wstring wide_name = make_wide_string(make_windows_compatible(name + '\0'));
 	try {
-		create_logic(handle, wide_name, max_instances, type, mode, is_unique, m_securityAttributes);
+		create_logic(handle, wide_name, max_instances, type, mode, is_unique, security_attributes);
 		created = true;
 	} catch (...) {
 		open_logic(handle, wide_name, mode);
+		set_connected(true);
 	}
 }
 
 os::windows::named_pipe::named_pipe(os::open_only_t, std::string name,
-									pipe_read_mode mode /*= pipe_read_mode::Message*/) {
+									pipe_read_mode mode /*= pipe_read_mode::Message*/)
+	: named_pipe() {
 	validate_open_param(name);
 
 	std::wstring wide_name = make_wide_string(make_windows_compatible(name + '\0'));
 	open_logic(handle, wide_name, mode);
+	set_connected(true);
 }
 
 os::windows::named_pipe::~named_pipe() {
@@ -204,60 +216,13 @@ os::error os::windows::named_pipe::total_available(size_t &avail) {
 	return os::error::Success;
 }
 
-os::error os::windows::named_pipe::read(std::unique_ptr<os::windows::async_request> &request, char *buffer,
-										size_t buffer_length) {
-	if (!request) {
-		request = std::make_unique<os::windows::async_request>();
-	}
-	request->set_handle(handle);
-
-	SetLastError(ERROR_SUCCESS);
-	if (!ReadFileEx(handle, buffer, DWORD(buffer_length), request->get_overlapped_pointer(),
-					os::windows::async_request::completion_routine)
-		|| (GetLastError() != ERROR_SUCCESS)) {
-		DWORD error = GetLastError();
-		if (error == ERROR_MORE_DATA) {
-			return os::error::MoreData;
-		} else if (error == ERROR_BROKEN_PIPE) {
-			return os::error::Disconnected;
-		} else if (error != ERROR_IO_PENDING) {
-			request->cancel();
-			return os::error::Error;
-		}
-	}
-
-	request->set_valid(true);
-	return os::error::Success;
-}
-
-os::error os::windows::named_pipe::write(std::unique_ptr<os::windows::async_request> &request, const char *buffer,
-										 size_t buffer_length) {
-	if (!request) {
-		request = std::make_unique<os::windows::async_request>();
-	}
-	request->set_handle(handle);
-
-	SetLastError(ERROR_SUCCESS);
-	if (!WriteFileEx(handle, buffer, DWORD(buffer_length), request->get_overlapped_pointer(),
-					 os::windows::async_request::completion_routine)
-		|| (GetLastError() != ERROR_SUCCESS)) {
-		DWORD error = GetLastError();
-		if (error == ERROR_MORE_DATA) {
-			return os::error::MoreData;
-		} else if (error == ERROR_BROKEN_PIPE) {
-			return os::error::Disconnected;
-		} else if (error != ERROR_IO_PENDING) {
-			return os::error::Error;
-		}
-	}
-
-	request->set_valid(true);
-	return os::error::Success;
-}
-
 os::error os::windows::named_pipe::read(char *buffer, size_t buffer_length, std::shared_ptr<os::async_op> &op,
 										os::async_op_cb_t cb) {
 	os::error ec;
+
+	if (!is_connected()) {
+		return os::error::Disconnected;
+	}
 
 	std::shared_ptr<os::windows::async_request> ar = std::static_pointer_cast<os::windows::async_request>(op);
 	if (!ar) {
@@ -286,6 +251,10 @@ os::error os::windows::named_pipe::read(char *buffer, size_t buffer_length, std:
 os::error os::windows::named_pipe::write(const char *buffer, size_t buffer_length, std::shared_ptr<os::async_op> &op,
 										 os::async_op_cb_t cb) {
 	os::error ec;
+
+	if (!is_connected()) {
+		return os::error::Disconnected;
+	}
 
 	std::shared_ptr<os::windows::async_request> ar = std::static_pointer_cast<os::windows::async_request>(op);
 	if (!ar) {
@@ -316,15 +285,72 @@ bool os::windows::named_pipe::is_created() {
 }
 
 bool os::windows::named_pipe::is_connected() {
-	size_t avail;
-	return available(avail) == os::error::Success;
+	ULONG processId, sessionId;
+
+	if (created) {
+		if (!GetNamedPipeClientProcessId(handle, &processId)) {
+			return false;
+		}
+		if (!GetNamedPipeClientSessionId(handle, &sessionId)) {
+			return false;
+		}
+	} else {
+		if (!GetNamedPipeServerProcessId(handle, &processId)) {
+			return false;
+		}
+		if (!GetNamedPipeServerSessionId(handle, &sessionId)) {
+			return false;
+		}
+	}
+
+	if ((processId != remoteId.processId) || (processId == 0)) {
+		remoteId.processId = 0;
+		remoteId.sessionId = 0;
+		return false;
+	}
+
+	if ((sessionId != remoteId.sessionId) || (sessionId == 0)) {
+		remoteId.processId = 0;
+		remoteId.sessionId = 0;
+		return false;
+	}
+
+	remoteId = {sessionId, processId};
+	return true;
 }
 
-os::error os::windows::named_pipe::accept(std::unique_ptr<os::windows::async_request> &request) {
-	std::shared_ptr<os::windows::async_request> ars = std::move(request);
-	os::error                                   ec  = accept(std::static_pointer_cast<os::async_op>(ars), nullptr);
-	request.reset(ars.get());
-	return ec;
+void os::windows::named_pipe::set_connected(bool is_connected) {
+	if (is_connected) {
+		ULONG processId, sessionId;
+
+		if (created) {
+			if (!GetNamedPipeClientProcessId(handle, &processId)) {
+				return;
+			}
+			if (!GetNamedPipeClientSessionId(handle, &sessionId)) {
+				return;
+			}
+		} else {
+			if (!GetNamedPipeServerProcessId(handle, &processId)) {
+				return;
+			}
+			if (!GetNamedPipeServerSessionId(handle, &sessionId)) {
+				return;
+			}
+		}
+
+		remoteId = {sessionId, processId};
+	} else {
+		remoteId = {0, 0};
+	}
+}
+
+void os::windows::named_pipe::handle_accept_callback(os::error code, size_t length) {
+	if (code == os::error::Connected || code == os::error::Success) {
+		set_connected(true);
+	} else {
+		set_connected(false);
+	}
 }
 
 os::error os::windows::named_pipe::accept(std::shared_ptr<os::async_op> &op, os::async_op_cb_t cb) {
@@ -340,6 +366,8 @@ os::error os::windows::named_pipe::accept(std::shared_ptr<os::async_op> &op, os:
 	}
 	op = std::static_pointer_cast<os::async_op>(ar);
 	ar->set_callback(cb);
+	ar->set_system_callback(
+		std::bind(&named_pipe::handle_accept_callback, this, std::placeholders::_1, std::placeholders::_2));
 	ar->set_handle(handle);
 
 	SetLastError(ERROR_SUCCESS);
