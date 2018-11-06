@@ -19,7 +19,7 @@ OPTION(${OPTIONPREFIX}BUILD_MODULE "Build Module Library instead of Dynamic Libr
 
 # Tests
 OPTION(${OPTIONPREFIX}BUILD_SAMPLES "Build Samples" OFF)
-OPTION(${OPTIONPREFIX}BUILD_TESTS "Build Tests" ON)
+OPTION(${OPTIONPREFIX}BUILD_TESTS "Build Tests" OFF)
 
 ################################################################################
 # System & Utilities
