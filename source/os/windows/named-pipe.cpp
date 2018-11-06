@@ -233,8 +233,12 @@ os::error os::windows::named_pipe::read(char *buffer, size_t buffer_length, std:
 	ar->set_handle(handle);
 
 	SetLastError(ERROR_SUCCESS);
-	BOOL  suc   = ReadFileEx(handle, buffer, DWORD(buffer_length), ar->get_overlapped_pointer(),
-                          os::windows::async_request::completion_routine);
+	BOOL suc = ReadFileEx(
+		handle, buffer, DWORD(buffer_length),
+		ar->get_overlapped_pointer(),
+		(LPOVERLAPPED_COMPLETION_ROUTINE)&os::windows::async_request::completion_routine
+	);
+
 	DWORD error = GetLastError();
 	ec          = utility::translate_error(error);
 
@@ -265,8 +269,13 @@ os::error os::windows::named_pipe::write(const char *buffer, size_t buffer_lengt
 	ar->set_handle(handle);
 
 	SetLastError(ERROR_SUCCESS);
-	BOOL  suc   = WriteFileEx(handle, buffer, DWORD(buffer_length), ar->get_overlapped_pointer(),
-                           os::windows::async_request::completion_routine);
+	BOOL  suc   = WriteFileEx(
+		handle, buffer,
+		DWORD(buffer_length),
+		ar->get_overlapped_pointer(),
+		(LPOVERLAPPED_COMPLETION_ROUTINE)&os::windows::async_request::completion_routine
+	);
+
 	DWORD error = GetLastError();
 	ec          = utility::translate_error(error);
 
