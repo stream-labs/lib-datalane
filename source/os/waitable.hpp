@@ -47,16 +47,6 @@ namespace os {
 
 		static os::error wait_any(std::vector<waitable *> items, size_t &signalled_index,
 								  std::chrono::nanoseconds timeout);
-
-		static os::error wait_all(waitable **items, size_t items_count, size_t &signalled_index);
-
-		static os::error wait_all(waitable **items, size_t items_count, size_t &signalled_index,
-								  std::chrono::nanoseconds timeout);
-
-		static os::error wait_all(std::vector<waitable *> items, size_t &signalled_index);
-
-		static os::error wait_all(std::vector<waitable *> items, size_t &signalled_index,
-								  std::chrono::nanoseconds timeout);
 	};
 } // namespace os
 
