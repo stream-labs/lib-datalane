@@ -36,19 +36,8 @@ ENDIF()
 ################################################################################
 # Source
 ################################################################################
-SET(PROJECT_SOURCE_PUBLIC
-	"${PROJECT_SOURCE_DIR}/include/datalane.hpp"
-	"${PROJECT_SOURCE_DIR}/include/datalane-socket.hpp"
-	"${PROJECT_SOURCE_DIR}/include/datalane-error.hpp"
-)
 
 SET(PROJECT_SOURCE_PRIVATE
-	"${PROJECT_SOURCE_DIR}/source/datalane.cpp"
-	"${PROJECT_SOURCE_DIR}/source/datalane-socket.cpp"
-	"${PROJECT_SOURCE_DIR}/source/datalane-socket-client.hpp"
-	"${PROJECT_SOURCE_DIR}/source/datalane-socket-client.cpp"
-	"${PROJECT_SOURCE_DIR}/source/datalane-socket-server.hpp"
-	"${PROJECT_SOURCE_DIR}/source/datalane-socket-server.cpp"
 	"${PROJECT_SOURCE_DIR}/source/os/async_op.hpp"
 	"${PROJECT_SOURCE_DIR}/source/os/async_op.cpp"
 	"${PROJECT_SOURCE_DIR}/source/os/error.hpp"
