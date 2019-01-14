@@ -64,15 +64,8 @@ namespace os {
 			named_pipe(os::create_only_t, std::string name, size_t max_instances = PIPE_UNLIMITED_INSTANCES,
 					   pipe_type type = pipe_type::Message, pipe_read_mode mode = pipe_read_mode::Message,
 					   bool is_unique = false);
-			named_pipe(os::create_or_open_t, std::string name, size_t max_instances = PIPE_UNLIMITED_INSTANCES,
-					   pipe_type type = pipe_type::Message, pipe_read_mode mode = pipe_read_mode::Message,
-					   bool is_unique = false);
 			named_pipe(os::open_only_t, std::string name, pipe_read_mode mode = pipe_read_mode::Message);
 			~named_pipe();
-
-			os::error available(size_t &avail);
-
-			os::error total_available(size_t &avail);
 
 			os::error read(char *buffer, size_t buffer_length, std::shared_ptr<os::async_op> &op, os::async_op_cb_t cb);
 

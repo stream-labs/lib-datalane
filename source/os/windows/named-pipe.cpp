@@ -152,23 +152,6 @@ os::windows::named_pipe::named_pipe(os::create_only_t, std::string name,
 	created = true;
 }
 
-os::windows::named_pipe::named_pipe(os::create_or_open_t, std::string name,
-									size_t         max_instances /*= PIPE_UNLIMITED_INSTANCES*/,
-									pipe_type      type /*= pipe_type::Message*/,
-									pipe_read_mode mode /*= pipe_read_mode::Message*/, bool is_unique /*= false*/)
-	: named_pipe() {
-	validate_create_param(name, max_instances);
-
-	std::wstring wide_name = make_wide_string(make_windows_compatible(name + '\0'));
-	try {
-		create_logic(handle, wide_name, max_instances, type, mode, is_unique, security_attributes);
-		created = true;
-	} catch (...) {
-		open_logic(handle, wide_name, mode);
-		set_connected(true);
-	}
-}
-
 os::windows::named_pipe::named_pipe(os::open_only_t, std::string name,
 									pipe_read_mode mode /*= pipe_read_mode::Message*/)
 	: named_pipe() {
@@ -184,36 +167,6 @@ os::windows::named_pipe::~named_pipe() {
 		DisconnectNamedPipe(handle);
 		CloseHandle(handle);
 	}
-}
-
-os::error os::windows::named_pipe::available(size_t &avail) {
-	DWORD bytes = 0;
-	SetLastError(ERROR_SUCCESS);
-	if (!PeekNamedPipe(handle, NULL, NULL, NULL, NULL, &bytes) || (GetLastError() != ERROR_SUCCESS)) {
-		switch (GetLastError()) {
-		case ERROR_BROKEN_PIPE:
-			return os::error::Disconnected;
-		default:
-			return os::error::Error;
-		}
-	}
-	avail = bytes;
-	return os::error::Success;
-}
-
-os::error os::windows::named_pipe::total_available(size_t &avail) {
-	DWORD bytes = 0;
-	SetLastError(ERROR_SUCCESS);
-	if (!PeekNamedPipe(handle, NULL, NULL, NULL, &bytes, NULL) || (GetLastError() != ERROR_SUCCESS)) {
-		switch (GetLastError()) {
-		case ERROR_BROKEN_PIPE:
-			return os::error::Disconnected;
-		default:
-			return os::error::Error;
-		}
-	}
-	avail = bytes;
-	return os::error::Success;
 }
 
 os::error os::windows::named_pipe::read(char *buffer, size_t buffer_length, std::shared_ptr<os::async_op> &op,
