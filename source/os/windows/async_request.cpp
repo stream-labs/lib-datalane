@@ -72,20 +72,6 @@ bool os::windows::async_request::is_complete() {
 	return HasOverlappedIoCompleted(this->get_overlapped_pointer());
 }
 
-size_t os::windows::async_request::get_bytes_transferred() {
-	if (!is_valid()) {
-		return 0;
-	}
-
-	DWORD bytes = 0;
-	SetLastError(ERROR_SUCCESS);
-	GetOverlappedResult(handle, this->get_overlapped_pointer(), &bytes, false);
-	if (GetLastError() == ERROR_IO_INCOMPLETE) {
-		return 0;
-	}
-	return bytes;
-}
-
 bool os::windows::async_request::cancel() {
 	if (!is_valid()) {
 		return false;

@@ -48,8 +48,6 @@ namespace os {
 
 			virtual bool is_complete() override;
 
-			virtual size_t get_bytes_transferred() override;
-
 			virtual bool cancel() override;
 
 			virtual void call_callback() override;

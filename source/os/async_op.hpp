@@ -49,8 +49,6 @@ namespace os {
 
 		virtual bool is_complete() = 0;
 
-		virtual size_t get_bytes_transferred() = 0;
-
 		virtual bool cancel() = 0;
 
 		virtual void set_callback(async_op_cb_t u_callback);
