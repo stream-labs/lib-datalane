@@ -33,11 +33,6 @@ namespace os {
 
 			public:
 			semaphore(int32_t initial_count = 0, int32_t maximum_count = std::numeric_limits<int32_t>::max());
-			semaphore(os::create_only_t, std::string name, int32_t initial_count = 0,
-					  int32_t maximum_count = std::numeric_limits<int32_t>::max());
-			semaphore(os::create_or_open_t, std::string name, int32_t initial_count = 0,
-					  int32_t maximum_count = std::numeric_limits<int32_t>::max());
-			semaphore(os::open_only_t, std::string name);
 			virtual ~semaphore();
 
 			virtual os::error signal(uint32_t count = 1) override;

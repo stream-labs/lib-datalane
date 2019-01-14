@@ -20,51 +20,6 @@
 #include <string>
 #include "semaphore.hpp"
 
-inline std::wstring make_wide_string(std::string name) {
-	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-	return converter.from_bytes(name);
-}
-
-inline void validate_params(std::wstring name, int32_t initial_count, int32_t maximum_count) {
-	if (initial_count > maximum_count) {
-		throw std::invalid_argument("'initial_count' can't be larger than 'maximum_count'.");
-	} else if (initial_count < 0) {
-		throw std::invalid_argument("'initial_count' can't be negative.");
-	} else if (maximum_count == 0) {
-		throw std::invalid_argument("'maximum_count' can't be 0.");
-	} else if (maximum_count < 0) {
-		throw std::invalid_argument("'maximum_count' can't be negative.");
-	} else if (name.length() > 0) {
-		if (name.length() >= MAX_PATH) {
-			std::vector<char> msg(2048);
-			sprintf_s(msg.data(), msg.size(), "'name' can't be longer than %lld characters.\0", uint64_t(MAX_PATH));
-			throw std::invalid_argument(msg.data());
-		}
-	}
-}
-
-inline void create_semaphore_impl(HANDLE &handle, std::wstring name, DWORD initial_count, DWORD maximum_count) {
-	SetLastError(ERROR_SUCCESS);
-	handle    = CreateSemaphoreW(NULL, initial_count, maximum_count, name.data());
-	DWORD err = GetLastError();
-	if (!handle || (err != ERROR_SUCCESS)) {
-		std::vector<char> msg(2048);
-		sprintf_s(msg.data(), msg.size(), "Semaphore creation failed with error code %lX.\0", GetLastError());
-		throw std::runtime_error(msg.data());
-	}
-}
-
-inline void open_semaphore_impl(HANDLE &handle, std::wstring name) {
-	SetLastError(ERROR_SUCCESS);
-	handle    = OpenSemaphoreW(SYNCHRONIZE | SEMAPHORE_MODIFY_STATE, false, name.data());
-	DWORD err = GetLastError();
-	if (!handle || (err != ERROR_SUCCESS)) {
-		std::vector<char> msg(2048);
-		sprintf_s(msg.data(), msg.size(), "Opening Semaphore failed with error code %lX.\0", GetLastError());
-		throw std::runtime_error(msg.data());
-	}
-}
-
 os::windows::semaphore::semaphore(int32_t initial_count /*= 0*/, int32_t maximum_count /*= UINT32_MAX*/) {
 	if (initial_count > maximum_count) {
 		throw std::invalid_argument("initial_count can't be larger than maximum_count");
@@ -79,31 +34,6 @@ os::windows::semaphore::semaphore(int32_t initial_count /*= 0*/, int32_t maximum
 		sprintf_s(msg.data(), msg.size(), "Semaphore creation failed with error code %lX.\0", GetLastError());
 		throw std::runtime_error(msg.data());
 	}
-}
-
-os::windows::semaphore::semaphore(os::create_only_t, std::string name, int32_t initial_count /*= 0*/,
-								  int32_t maximum_count /*= UINT32_MAX*/) {
-	std::wstring wide_name = make_wide_string(name + '\0');
-	validate_params(wide_name, initial_count, maximum_count);
-	create_semaphore_impl(handle, wide_name, initial_count, maximum_count);
-}
-
-os::windows::semaphore::semaphore(os::create_or_open_t, std::string name, int32_t initial_count /*= 0*/,
-								  int32_t maximum_count /*= UINT32_MAX*/) {
-	std::wstring wide_name = make_wide_string(name + '\0');
-	validate_params(wide_name, initial_count, maximum_count);
-	try {
-		create_semaphore_impl(handle, wide_name, initial_count, maximum_count);
-	} catch (...) {
-		// There's technically two errors here, but the latter is likely to be more interesting.
-		open_semaphore_impl(handle, wide_name);
-	}
-}
-
-os::windows::semaphore::semaphore(os::open_only_t, std::string name) {
-	std::wstring wide_name = make_wide_string(name + '\0');
-	validate_params(wide_name, 0, 1);
-	open_semaphore_impl(handle, wide_name);
 }
 
 os::windows::semaphore::~semaphore() {
@@ -127,26 +57,4 @@ os::error os::windows::semaphore::signal(uint32_t count /*= 1*/) {
 
 void *os::windows::semaphore::get_waitable() {
 	return (void *)handle;
-}
-
-std::shared_ptr<os::semaphore> os::semaphore::construct(uint32_t value /*= 0*/) {
-	int32_t val = value <= uint32_t(std::numeric_limits<int32_t>::max()) ? int32_t(value) : std::numeric_limits<int32_t>::max();
-	return std::make_shared<os::windows::semaphore>(val);
-}
-
-std::shared_ptr<os::semaphore> os::semaphore::construct(os::create_only_t, std::string name, uint32_t value /*= 0*/) {
-	int32_t val =
-		value <= uint32_t(std::numeric_limits<int32_t>::max()) ? int32_t(value) : std::numeric_limits<int32_t>::max();
-	return std::make_shared<os::windows::semaphore>(os::create_only, name, val);
-}
-
-std::shared_ptr<os::semaphore> os::semaphore::construct(os::create_or_open_t, std::string name,
-														uint32_t value /*= 0*/) {
-	int32_t val =
-		value <= uint32_t(std::numeric_limits<int32_t>::max()) ? int32_t(value) : std::numeric_limits<int32_t>::max();
-	return std::make_shared<os::windows::semaphore>(os::create_or_open, name, val);
-}
-
-std::shared_ptr<os::semaphore> os::semaphore::construct(os::open_only_t, std::string name) {
-	return std::make_shared<os::windows::semaphore>(os::open_only, name);
 }

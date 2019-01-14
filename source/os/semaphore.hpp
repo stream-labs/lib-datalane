@@ -27,12 +27,6 @@ namespace os {
 	class semaphore : public os::waitable {
 		public:
 		virtual os::error signal(uint32_t count = 1) = 0;
-
-		public:
-		static std::shared_ptr<os::semaphore> construct(uint32_t value = 0);
-		static std::shared_ptr<os::semaphore> construct(os::create_only_t, std::string name, uint32_t value = 0);
-		static std::shared_ptr<os::semaphore> construct(os::create_or_open_t, std::string name, uint32_t value = 0);
-		static std::shared_ptr<os::semaphore> construct(os::open_only_t, std::string name);
 	};
 } // namespace os
 
