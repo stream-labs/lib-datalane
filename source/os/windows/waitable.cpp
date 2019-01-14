@@ -110,16 +110,3 @@ wait_any_retry:
 	}
 	return os::error::Error;
 }
-
-os::error os::waitable::wait_any(waitable **items, size_t items_count, size_t &signalled_index) {
-	return wait_any(items, items_count, signalled_index, std::chrono::milliseconds(INFINITE));
-}
-
-os::error os::waitable::wait_any(std::vector<waitable *> items, size_t &signalled_index,
-								 std::chrono::nanoseconds timeout) {
-	return wait_any(items.data(), items.size(), signalled_index, timeout);
-}
-
-os::error os::waitable::wait_any(std::vector<waitable *> items, size_t &signalled_index) {
-	return wait_any(items.data(), items.size(), signalled_index);
-}
